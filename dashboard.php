@@ -28,7 +28,7 @@ foreach ($user_stats as $stat) {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-    <title>Dashboard - Student Progress Monitor</title>
+    <title>Dashboard - Research Apps</title>
     <meta name="description" content="" />
 
     <!-- Favicon -->
@@ -83,7 +83,7 @@ foreach ($user_stats as $stat) {
                                                 <h5 class="card-title text-primary">Welcome back, <?php echo htmlspecialchars($current_user['full_name']); ?>! 🎉</h5>
                                                 <p class="mb-4">
                                                     You are logged in as <span class="fw-bold"><?php echo ucfirst($current_user['user_type']); ?></span>. 
-                                                    Use the navigation menu to manage users and monitor student progress.
+                                                    Use the navigation menu to manage users and access research applications.
                                                 </p>
                                                 <a href="/research_apps/users/list.php" class="btn btn-sm btn-outline-primary">View Users</a>
                                             </div>

@@ -40,7 +40,7 @@ if ($_POST) {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-    <title>Login - Student Progress Monitor</title>
+    <title>Login - Research Apps</title>
     <meta name="description" content="" />
 
     <!-- Favicon -->
@@ -113,13 +113,13 @@ if ($_POST) {
                                         </g>
                                     </svg>
                                 </span>
-                                <span class="app-brand-text demo text-body fw-bolder">Student Progress</span>
+                                <span class="app-brand-text demo text-body fw-bolder">Research Apps</span>
                             </a>
                         </div>
                         <!-- /Logo -->
                         
                         <h4 class="mb-2">Welcome! 👋</h4>
-                        <p class="mb-4">Please sign-in to your account and monitor student progress</p>
+                        <p class="mb-4">Please sign-in to your account and access research applications</p>
 
                         <?php if (!empty($error_message)): ?>
                             <div class="alert alert-danger" role="alert">

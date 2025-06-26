@@ -1,6 +1,6 @@
 <?php
 /**
- * Database Setup Script for Student Progress Monitor
+ * Database Setup Script for Research Apps
  * Run this script to automatically create the database and tables
  */
 
@@ -8,9 +8,9 @@
 $host = 'localhost';
 $root_username = 'root';
 $root_password = '';  // Change this to your MySQL root password
-$database_name = 'student_progress_db';
+$database_name = 'research_apps_db';
 
-echo "<h2>Student Progress Monitor - Database Setup</h2>";
+echo "<h2>Research Apps - Database Setup</h2>";
 echo "<p>Setting up database: <strong>$database_name</strong></p>";
 
 try {

@@ -46,7 +46,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-    <title><?php echo $page_title; ?> - Student Progress Monitor</title>
+    <title><?php echo $page_title; ?> - Research Apps</title>
     <meta name="description" content="" />
 
     <!-- Favicon -->

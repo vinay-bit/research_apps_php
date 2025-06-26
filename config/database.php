@@ -1,7 +1,7 @@
 <?php
 class Database {
     private $host = 'localhost';
-    private $db_name = 'student_progress_db';
+    private $db_name = 'research_apps_db';
     private $username = 'root';
     private $password = '';
     public $conn;

@@ -1,6 +1,6 @@
 -- Create database
-CREATE DATABASE IF NOT EXISTS student_progress_db;
-USE student_progress_db;
+CREATE DATABASE IF NOT EXISTS research_apps_db;
+USE research_apps_db;
 
 -- Create organizations table for dropdown
 CREATE TABLE organizations (

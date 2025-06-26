@@ -39,7 +39,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     </g>
                 </svg>
             </span>
-            <span class="app-brand-text demo menu-text fw-bolder ms-2">Student Progress</span>
+            <span class="app-brand-text demo menu-text fw-bolder ms-2">Research Apps</span>
         </a>
 
         <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
