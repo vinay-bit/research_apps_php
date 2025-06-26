@@ -16,6 +16,12 @@ class User {
     public $organization_name;
     public $mou_signed;
     public $mou_drive_link;
+    public $contact_no;
+    public $email_id;
+    public $address;
+    public $primary_contact_id;
+    public $councillor_rbm_id;
+    public $branch;
     public $status;
     public $created_at;
 
@@ -29,7 +35,10 @@ class User {
                 SET user_type=:user_type, full_name=:full_name, username=:username, 
                     password=:password, department_id=:department_id, specialization=:specialization,
                     organization_id=:organization_id, organization_name=:organization_name,
-                    mou_signed=:mou_signed, mou_drive_link=:mou_drive_link, status=:status";
+                    mou_signed=:mou_signed, mou_drive_link=:mou_drive_link, 
+                    contact_no=:contact_no, email_id=:email_id, address=:address,
+                    primary_contact_id=:primary_contact_id, councillor_rbm_id=:councillor_rbm_id,
+                    branch=:branch, status=:status";
 
         $stmt = $this->conn->prepare($query);
 
@@ -50,6 +59,12 @@ class User {
         $stmt->bindParam(":organization_name", $this->organization_name);
         $stmt->bindParam(":mou_signed", $this->mou_signed);
         $stmt->bindParam(":mou_drive_link", $this->mou_drive_link);
+        $stmt->bindParam(":contact_no", $this->contact_no);
+        $stmt->bindParam(":email_id", $this->email_id);
+        $stmt->bindParam(":address", $this->address);
+        $stmt->bindParam(":primary_contact_id", $this->primary_contact_id);
+        $stmt->bindParam(":councillor_rbm_id", $this->councillor_rbm_id);
+        $stmt->bindParam(":branch", $this->branch);
         $stmt->bindParam(":status", $this->status);
 
         if($stmt->execute()) {
@@ -95,6 +110,12 @@ class User {
             $this->organization_name = $row['organization_name'];
             $this->mou_signed = $row['mou_signed'];
             $this->mou_drive_link = $row['mou_drive_link'];
+            $this->contact_no = $row['contact_no'];
+            $this->email_id = $row['email_id'];
+            $this->address = $row['address'];
+            $this->primary_contact_id = $row['primary_contact_id'];
+            $this->councillor_rbm_id = $row['councillor_rbm_id'];
+            $this->branch = $row['branch'];
             $this->status = $row['status'];
             $this->created_at = $row['created_at'];
             return true;
@@ -108,7 +129,9 @@ class User {
                 SET full_name=:full_name, username=:username, department_id=:department_id,
                     specialization=:specialization, organization_id=:organization_id,
                     organization_name=:organization_name, mou_signed=:mou_signed,
-                    mou_drive_link=:mou_drive_link, status=:status
+                    mou_drive_link=:mou_drive_link, contact_no=:contact_no, email_id=:email_id,
+                    address=:address, primary_contact_id=:primary_contact_id, 
+                    councillor_rbm_id=:councillor_rbm_id, branch=:branch, status=:status
                 WHERE id=:id";
 
         $stmt = $this->conn->prepare($query);
@@ -124,6 +147,12 @@ class User {
         $stmt->bindParam(':organization_name', $this->organization_name);
         $stmt->bindParam(':mou_signed', $this->mou_signed);
         $stmt->bindParam(':mou_drive_link', $this->mou_drive_link);
+        $stmt->bindParam(':contact_no', $this->contact_no);
+        $stmt->bindParam(':email_id', $this->email_id);
+        $stmt->bindParam(':address', $this->address);
+        $stmt->bindParam(':primary_contact_id', $this->primary_contact_id);
+        $stmt->bindParam(':councillor_rbm_id', $this->councillor_rbm_id);
+        $stmt->bindParam(':branch', $this->branch);
         $stmt->bindParam(':status', $this->status);
         $stmt->bindParam(':id', $this->id);
 
@@ -191,6 +220,22 @@ class User {
     // Get all organizations
     public function getOrganizations() {
         $query = "SELECT * FROM organizations ORDER BY name";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
+    }
+    
+    // Get all RBM users
+    public function getRBMUsers() {
+        $query = "SELECT id, full_name, branch FROM users WHERE user_type = 'rbm' AND status = 'active' ORDER BY full_name";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
+    }
+    
+    // Get all users for primary contact dropdown
+    public function getAllUsersForContact() {
+        $query = "SELECT id, full_name, user_type FROM users WHERE status = 'active' ORDER BY user_type, full_name";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt;

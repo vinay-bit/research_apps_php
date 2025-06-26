@@ -18,10 +18,16 @@ $stmt = $db->prepare($query);
 $stmt->execute();
 $user_stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$stats = ['admin' => 0, 'mentor' => 0, 'councillor' => 0];
+$stats = ['admin' => 0, 'mentor' => 0, 'councillor' => 0, 'rbm' => 0];
 foreach ($user_stats as $stat) {
     $stats[$stat['user_type']] = $stat['count'];
 }
+
+// Get student count
+$query = "SELECT COUNT(*) as count FROM students";
+$stmt = $db->prepare($query);
+$stmt->execute();
+$student_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 ?>
 <!DOCTYPE html>
 <html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="Apps/assets/" data-template="vertical-menu-template-free">
@@ -83,9 +89,10 @@ foreach ($user_stats as $stat) {
                                                 <h5 class="card-title text-primary">Welcome back, <?php echo htmlspecialchars($current_user['full_name']); ?>! 🎉</h5>
                                                 <p class="mb-4">
                                                     You are logged in as <span class="fw-bold"><?php echo ucfirst($current_user['user_type']); ?></span>. 
-                                                    Use the navigation menu to manage users and access research applications.
+                                                    Use the navigation menu to manage users, students, and access research applications.
                                                 </p>
-                                                <a href="/research_apps/users/list.php" class="btn btn-sm btn-outline-primary">View Users</a>
+                                                <a href="/research_apps/users/list.php" class="btn btn-sm btn-outline-primary me-2">View Users</a>
+                                                <a href="/research_apps/students/list.php" class="btn btn-sm btn-primary">View Students</a>
                                             </div>
                                         </div>
                                         <div class="col-sm-5 text-center text-sm-left">
@@ -119,9 +126,9 @@ foreach ($user_stats as $stat) {
                                                         <img src="Apps/assets/img/icons/unicons/wallet-info.png" alt="Credit Card" class="rounded" />
                                                     </div>
                                                 </div>
-                                                <span>Active Projects</span>
-                                                <h3 class="card-title text-nowrap mb-1">0</h3>
-                                                <small class="text-success fw-semibold">Coming Soon</small>
+                                                <span>Total Students</span>
+                                                <h3 class="card-title text-nowrap mb-1"><?php echo $student_count; ?></h3>
+                                                <small class="text-success fw-semibold"><i class="bx bx-user-circle"></i> Active</small>
                                             </div>
                                         </div>
                                     </div>
@@ -131,7 +138,7 @@ foreach ($user_stats as $stat) {
 
                         <!-- User Statistics Cards -->
                         <div class="row">
-                            <div class="col-md-4 col-lg-4 col-xl-4 order-0 mb-4">
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-0 mb-4">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
@@ -149,7 +156,7 @@ foreach ($user_stats as $stat) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 col-lg-4 col-xl-4 order-1 mb-4">
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-1 mb-4">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
@@ -167,7 +174,7 @@ foreach ($user_stats as $stat) {
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 col-lg-4 col-xl-4 order-2 mb-4">
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-2 mb-4">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
@@ -181,6 +188,24 @@ foreach ($user_stats as $stat) {
                                                 </div>
                                             </div>
                                             <div id="councillorChart"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-3 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">RBMs</h5>
+                                                    <span class="badge bg-label-success rounded-pill">Branch Mgrs</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0"><?php echo $stats['rbm']; ?></h3>
+                                                </div>
+                                            </div>
+                                            <div id="rbmChart"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -209,15 +234,29 @@ foreach ($user_stats as $stat) {
                                         </div>
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="avatar me-3">
-                                                <span class="avatar-initial rounded bg-label-info"><i class="bx bx-cog"></i></span>
+                                                <span class="avatar-initial rounded bg-label-success"><i class="bx bx-user-circle"></i></span>
                                             </div>
                                             <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
                                                 <div class="me-2">
-                                                    <h6 class="mb-0">Student Module</h6>
-                                                    <small class="text-muted">Coming next - Student management system</small>
+                                                    <h6 class="mb-0">Student Management System</h6>
+                                                    <small class="text-muted">Full student management with RBM assignment implemented</small>
                                                 </div>
                                                 <div class="user-progress d-flex align-items-center gap-1">
-                                                    <span class="badge bg-label-warning">Pending</span>
+                                                    <span class="badge bg-label-success">Completed</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="avatar me-3">
+                                                <span class="avatar-initial rounded bg-label-success"><i class="bx bx-briefcase"></i></span>
+                                            </div>
+                                            <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
+                                                <div class="me-2">
+                                                    <h6 class="mb-0">RBM User Type</h6>
+                                                    <small class="text-muted">Research Branch Manager user type added successfully</small>
+                                                </div>
+                                                <div class="user-progress d-flex align-items-center gap-1">
+                                                    <span class="badge bg-label-success">Completed</span>
                                                 </div>
                                             </div>
                                         </div>

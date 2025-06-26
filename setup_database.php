@@ -49,7 +49,7 @@ try {
     // Create users table
     $sql = "CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_type ENUM('admin', 'mentor', 'councillor') NOT NULL,
+        user_type ENUM('admin', 'mentor', 'councillor', 'rbm') NOT NULL,
         full_name VARCHAR(255) NOT NULL,
         username VARCHAR(100) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
@@ -65,13 +65,23 @@ try {
         organization_name VARCHAR(255) NULL,
         mou_signed BOOLEAN DEFAULT FALSE,
         mou_drive_link VARCHAR(500) NULL,
+        contact_no VARCHAR(20) NULL,
+        email_id VARCHAR(255) NULL,
+        address TEXT NULL,
+        primary_contact_id INT NULL,
+        councillor_rbm_id INT NULL,
+        
+        -- RBM specific fields
+        branch VARCHAR(255) NULL,
         
         status ENUM('active', 'inactive') DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         
         FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
-        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL
+        FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
+        FOREIGN KEY (primary_contact_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (councillor_rbm_id) REFERENCES users(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
     $pdo->exec($sql);
     echo "<p>✅ Users table created!</p>";
@@ -87,6 +97,43 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
     $pdo->exec($sql);
     echo "<p>✅ User sessions table created!</p>";
+    
+    // Create boards table
+    $sql = "CREATE TABLE IF NOT EXISTS boards (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    echo "<p>✅ Boards table created!</p>";
+
+    // Insert default boards
+    $sql = "INSERT IGNORE INTO boards (name) VALUES ('IB'), ('IG'), ('ICSE'), ('CBSE'), ('State Board')";
+    $pdo->exec($sql);
+    echo "<p>✅ Default boards inserted!</p>";
+
+    // Create students table
+    $sql = "CREATE TABLE IF NOT EXISTS students (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        student_id VARCHAR(20) NOT NULL UNIQUE,
+        full_name VARCHAR(255) NOT NULL,
+        affiliation VARCHAR(255) NULL,
+        grade VARCHAR(50) NULL,
+        counselor_id INT NULL,
+        rbm_id INT NULL,
+        board_id INT NULL,
+        contact_no VARCHAR(20) NULL,
+        email_address VARCHAR(255) NULL,
+        application_year YEAR NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        
+        FOREIGN KEY (counselor_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (rbm_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (board_id) REFERENCES boards(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+    $pdo->exec($sql);
+    echo "<p>✅ Students table created!</p>";
     
     // Insert sample organizations
     $organizations = [
@@ -142,11 +189,19 @@ try {
     
     // Create sample councillor user
     $councillor_password = password_hash('councillor123', PASSWORD_DEFAULT);
-    $sql = "INSERT IGNORE INTO users (user_type, full_name, username, password, organization_name, mou_signed, mou_drive_link, status) 
-            VALUES ('councillor', 'Dr. Sarah Johnson', 'councillor', ?, 'Academic Support Center', TRUE, 'https://drive.google.com/sample-mou-link', 'active')";
+    $sql = "INSERT IGNORE INTO users (user_type, full_name, username, password, organization_name, mou_signed, mou_drive_link, contact_no, email_id, address, status) 
+            VALUES ('councillor', 'Dr. Sarah Johnson', 'councillor', ?, 'Academic Support Center', TRUE, 'https://drive.google.com/sample-mou-link', '+1234567890', 'sarah.johnson@example.com', '123 Academic Street, University City, State 12345', 'active')";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$councillor_password]);
     echo "<p>✅ Sample councillor user created!</p>";
+    
+    // Create sample RBM user
+    $rbm_password = password_hash('rbm123', PASSWORD_DEFAULT);
+    $sql = "INSERT IGNORE INTO users (user_type, full_name, username, password, branch, status) 
+            VALUES ('rbm', 'Dr. Michael Chen', 'rbm', ?, 'Computer Science Research', 'active')";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$rbm_password]);
+    echo "<p>✅ Sample RBM user created!</p>";
     
     echo "<hr>";
     echo "<h3>🎉 Database Setup Complete!</h3>";
@@ -155,6 +210,7 @@ try {
     echo "<li><strong>Admin:</strong> username = <code>admin</code>, password = <code>admin123</code></li>";
     echo "<li><strong>Mentor:</strong> username = <code>mentor</code>, password = <code>mentor123</code></li>";
     echo "<li><strong>Councillor:</strong> username = <code>councillor</code>, password = <code>councillor123</code></li>";
+    echo "<li><strong>RBM:</strong> username = <code>rbm</code>, password = <code>rbm123</code></li>";
     echo "</ul>";
     
     echo "<p><strong>Next Steps:</strong></p>";

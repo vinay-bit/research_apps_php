@@ -16,6 +16,12 @@ $success_message = '';
 $departments = $user->getDepartments()->fetchAll(PDO::FETCH_ASSOC);
 $organizations = $user->getOrganizations()->fetchAll(PDO::FETCH_ASSOC);
 
+// Get RBM users for dropdown
+$rbm_users = $user->getRBMUsers()->fetchAll(PDO::FETCH_ASSOC);
+
+// Get all users for primary contact dropdown
+$contact_users = $user->getAllUsersForContact()->fetchAll(PDO::FETCH_ASSOC);
+
 if ($_POST) {
     // Validate input
     $user_type = trim($_POST['user_type']);
@@ -51,6 +57,12 @@ if ($_POST) {
                 $user->organization_name = null;
                 $user->mou_signed = false;
                 $user->mou_drive_link = null;
+                $user->contact_no = null;
+                $user->email_id = null;
+                $user->address = null;
+                $user->primary_contact_id = null;
+                $user->councillor_rbm_id = null;
+                $user->branch = null;
             } elseif ($user_type == 'mentor') {
                 $user->department_id = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
                 $user->specialization = trim($_POST['specialization']);
@@ -58,6 +70,12 @@ if ($_POST) {
                 $user->organization_name = null;
                 $user->mou_signed = false;
                 $user->mou_drive_link = null;
+                $user->contact_no = null;
+                $user->email_id = null;
+                $user->address = null;
+                $user->primary_contact_id = null;
+                $user->councillor_rbm_id = null;
+                $user->branch = null;
             } elseif ($user_type == 'councillor') {
                 $user->department_id = null;
                 $user->specialization = null;
@@ -65,6 +83,25 @@ if ($_POST) {
                 $user->organization_name = trim($_POST['organization_name']);
                 $user->mou_signed = isset($_POST['mou_signed']) && $_POST['mou_signed'] == '1';
                 $user->mou_drive_link = $user->mou_signed ? trim($_POST['mou_drive_link']) : null;
+                $user->contact_no = !empty($_POST['contact_no']) ? trim($_POST['contact_no']) : null;
+                $user->email_id = !empty($_POST['email_id']) ? trim($_POST['email_id']) : null;
+                $user->address = !empty($_POST['address']) ? trim($_POST['address']) : null;
+                $user->primary_contact_id = !empty($_POST['primary_contact_id']) ? intval($_POST['primary_contact_id']) : null;
+                $user->councillor_rbm_id = !empty($_POST['councillor_rbm_id']) ? intval($_POST['councillor_rbm_id']) : null;
+                $user->branch = null;
+            } elseif ($user_type == 'rbm') {
+                $user->department_id = null;
+                $user->specialization = null;
+                $user->organization_id = null;
+                $user->organization_name = null;
+                $user->mou_signed = false;
+                $user->mou_drive_link = null;
+                $user->contact_no = null;
+                $user->email_id = null;
+                $user->address = null;
+                $user->primary_contact_id = null;
+                $user->councillor_rbm_id = null;
+                $user->branch = trim($_POST['branch']);
             }
 
             // Create user
@@ -163,6 +200,7 @@ if ($_POST) {
                                                         <option value="admin" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'admin') ? 'selected' : ''; ?>>Admin</option>
                                                         <option value="mentor" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'mentor') ? 'selected' : ''; ?>>Mentor</option>
                                                         <option value="councillor" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'councillor') ? 'selected' : ''; ?>>Councillor</option>
+                                                        <option value="rbm" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'rbm') ? 'selected' : ''; ?>>RBM (Research Branch Manager)</option>
                                                     </select>
                                                 </div>
 
@@ -255,6 +293,61 @@ if ($_POST) {
                                                         <div class="form-text">Provide the Google Drive link to the signed MOU document</div>
                                                     </div>
                                                 </div>
+                                                
+                                                <!-- Additional Councillor Fields -->
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="contact_no" class="form-label">Contact No</label>
+                                                        <input type="tel" class="form-control" id="contact_no" name="contact_no" value="<?php echo isset($_POST['contact_no']) ? htmlspecialchars($_POST['contact_no']) : ''; ?>" placeholder="+1234567890">
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="email_id" class="form-label">Email ID</label>
+                                                        <input type="email" class="form-control" id="email_id" name="email_id" value="<?php echo isset($_POST['email_id']) ? htmlspecialchars($_POST['email_id']) : ''; ?>" placeholder="councillor@example.com">
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-12 mb-3">
+                                                        <label for="address" class="form-label">Address</label>
+                                                        <textarea class="form-control" id="address" name="address" rows="3" placeholder="Enter full address"><?php echo isset($_POST['address']) ? htmlspecialchars($_POST['address']) : ''; ?></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="primary_contact_id" class="form-label">Primary Contact</label>
+                                                        <select class="form-select" id="primary_contact_id" name="primary_contact_id">
+                                                            <option value="">Select Primary Contact</option>
+                                                            <?php foreach ($contact_users as $contact): ?>
+                                                                <option value="<?php echo $contact['id']; ?>" <?php echo (isset($_POST['primary_contact_id']) && $_POST['primary_contact_id'] == $contact['id']) ? 'selected' : ''; ?>>
+                                                                    <?php echo htmlspecialchars($contact['full_name']); ?> (<?php echo ucfirst($contact['user_type']); ?>)
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <div class="form-text">Select the primary contact person for this councillor</div>
+                                                    </div>
+                                                    <div class="col-md-6 mb-3">
+                                                        <label for="councillor_rbm_id" class="form-label">Assigned RBM</label>
+                                                        <select class="form-select" id="councillor_rbm_id" name="councillor_rbm_id">
+                                                            <option value="">Select RBM</option>
+                                                            <?php foreach ($rbm_users as $rbm): ?>
+                                                                <option value="<?php echo $rbm['id']; ?>" <?php echo (isset($_POST['councillor_rbm_id']) && $_POST['councillor_rbm_id'] == $rbm['id']) ? 'selected' : ''; ?>>
+                                                                    <?php echo htmlspecialchars($rbm['full_name']); ?> - <?php echo htmlspecialchars($rbm['branch']); ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <div class="form-text">Assign an RBM to oversee this councillor's activities</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- RBM Only Fields -->
+                                            <div id="rbm_fields" style="display: none;">
+                                                <div class="row">
+                                                    <div class="col-md-12 mb-3">
+                                                        <label for="branch" class="form-label">Research Branch <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control" id="branch" name="branch" value="<?php echo isset($_POST['branch']) ? htmlspecialchars($_POST['branch']) : ''; ?>" placeholder="e.g., Computer Science Research, Biomedical Research">
+                                                        <div class="form-text">Specify the research branch or department that this RBM manages</div>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             <div class="mt-4">
@@ -299,11 +392,13 @@ if ($_POST) {
             const adminMentorFields = document.getElementById('admin_mentor_fields');
             const mentorFields = document.getElementById('mentor_fields');
             const councillorFields = document.getElementById('councillor_fields');
+            const rbmFields = document.getElementById('rbm_fields');
 
             // Hide all fields first
             adminMentorFields.style.display = 'none';
             mentorFields.style.display = 'none';
             councillorFields.style.display = 'none';
+            rbmFields.style.display = 'none';
 
             // Show relevant fields based on user type
             if (userType === 'admin' || userType === 'mentor') {
@@ -314,6 +409,8 @@ if ($_POST) {
             } else if (userType === 'councillor') {
                 councillorFields.style.display = 'block';
                 toggleMOULink(); // Check MOU checkbox state
+            } else if (userType === 'rbm') {
+                rbmFields.style.display = 'block';
             }
         }
 

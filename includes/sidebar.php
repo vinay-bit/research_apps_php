@@ -110,17 +110,36 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
         </li>
 
+        <!-- RBMs -->
+        <li class="menu-item">
+            <a href="/research_apps/users/list.php?type=rbm" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-briefcase"></i>
+                <div data-i18n="RBMs">RBMs</div>
+            </a>
+        </li>
+
         <!-- Student Management -->
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Student Management</span>
         </li>
         
-        <li class="menu-item">
-            <a href="#" class="menu-link">
+        <li class="menu-item <?php echo (strpos($current_page, 'student') !== false) ? 'active open' : ''; ?>">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-user-circle"></i>
                 <div data-i18n="Students">Students</div>
-                <div class="badge bg-danger rounded-pill ms-auto">Soon</div>
             </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?php echo ($current_page == 'list.php' && strpos($_SERVER['REQUEST_URI'], 'students') !== false) ? 'active' : ''; ?>">
+                    <a href="/research_apps/students/list.php" class="menu-link">
+                        <div data-i18n="All Students">All Students</div>
+                    </a>
+                </li>
+                <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'students') !== false) ? 'active' : ''; ?>">
+                    <a href="/research_apps/students/create.php" class="menu-link">
+                        <div data-i18n="Add Student">Add Student</div>
+                    </a>
+                </li>
+            </ul>
         </li>
         
         <li class="menu-item">

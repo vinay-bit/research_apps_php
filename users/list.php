@@ -26,17 +26,32 @@ $page_title = $filter_type ? ucfirst($filter_type) . 's' : 'All Users';
 
 // Get users with optional filtering
 if ($filter_type) {
-    $query = "SELECT u.*, d.name as department_name, o.name as organization_name_ref
+    $query = "SELECT u.*, d.name as department_name, o.name as organization_name_ref,
+                     pc.full_name as primary_contact_name, pc.user_type as primary_contact_type,
+                     rbm.full_name as councillor_rbm_name, rbm.branch as councillor_rbm_branch
               FROM users u
               LEFT JOIN departments d ON u.department_id = d.id
               LEFT JOIN organizations o ON u.organization_id = o.id
+              LEFT JOIN users pc ON u.primary_contact_id = pc.id
+              LEFT JOIN users rbm ON u.councillor_rbm_id = rbm.id
               WHERE u.user_type = :user_type
               ORDER BY u.created_at DESC";
     $stmt = $db->prepare($query);
     $stmt->bindParam(':user_type', $filter_type);
     $stmt->execute();
 } else {
-    $stmt = $user->read();
+    // For all users, we need a custom query too
+    $query = "SELECT u.*, d.name as department_name, o.name as organization_name_ref,
+                     pc.full_name as primary_contact_name, pc.user_type as primary_contact_type,
+                     rbm.full_name as councillor_rbm_name, rbm.branch as councillor_rbm_branch
+              FROM users u
+              LEFT JOIN departments d ON u.department_id = d.id
+              LEFT JOIN organizations o ON u.organization_id = o.id
+              LEFT JOIN users pc ON u.primary_contact_id = pc.id
+              LEFT JOIN users rbm ON u.councillor_rbm_id = rbm.id
+              ORDER BY u.created_at DESC";
+    $stmt = $db->prepare($query);
+    $stmt->execute();
 }
 
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -121,24 +136,29 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <a href="/research_apps/users/list.php" class="btn btn-outline-secondary w-100 <?php echo !$filter_type ? 'active' : ''; ?>">
                                             All Users (<?php echo count($users); ?>)
                                         </a>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <a href="/research_apps/users/list.php?type=admin" class="btn btn-outline-warning w-100 <?php echo $filter_type == 'admin' ? 'active' : ''; ?>">
                                             Admins
                                         </a>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <a href="/research_apps/users/list.php?type=mentor" class="btn btn-outline-primary w-100 <?php echo $filter_type == 'mentor' ? 'active' : ''; ?>">
                                             Mentors
                                         </a>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md-2">
                                         <a href="/research_apps/users/list.php?type=councillor" class="btn btn-outline-info w-100 <?php echo $filter_type == 'councillor' ? 'active' : ''; ?>">
                                             Councillors
+                                        </a>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <a href="/research_apps/users/list.php?type=rbm" class="btn btn-outline-success w-100 <?php echo $filter_type == 'rbm' ? 'active' : ''; ?>">
+                                            RBMs
                                         </a>
                                     </div>
                                 </div>
@@ -178,6 +198,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                                             case 'admin': echo 'bg-label-warning'; break;
                                                                             case 'mentor': echo 'bg-label-primary'; break;
                                                                             case 'councillor': echo 'bg-label-info'; break;
+                                                                            case 'rbm': echo 'bg-label-success'; break;
                                                                             default: echo 'bg-label-secondary';
                                                                         }
                                                                     ?>">
@@ -204,6 +225,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                             case 'admin': $badge_class = 'bg-label-warning'; break;
                                                             case 'mentor': $badge_class = 'bg-label-primary'; break;
                                                             case 'councillor': $badge_class = 'bg-label-info'; break;
+                                                            case 'rbm': $badge_class = 'bg-label-success'; break;
                                                         }
                                                         ?>
                                                         <span class="badge <?php echo $badge_class; ?> me-1"><?php echo ucfirst($user_row['user_type']); ?></span>
@@ -219,6 +241,20 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                             <?php elseif ($user_row['user_type'] == 'councillor'): ?>
                                                                 Org: <?php echo htmlspecialchars($user_row['organization_name'] ?? 'N/A'); ?>
                                                                 <br>MOU: <?php echo $user_row['mou_signed'] ? '<span class="text-success">Yes</span>' : '<span class="text-danger">No</span>'; ?>
+                                                                <?php if (!empty($user_row['contact_no'])): ?>
+                                                                    <br>Contact: <?php echo htmlspecialchars($user_row['contact_no']); ?>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($user_row['email_id'])): ?>
+                                                                    <br>Email: <?php echo htmlspecialchars($user_row['email_id']); ?>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($user_row['primary_contact_name'])): ?>
+                                                                    <br>Primary: <?php echo htmlspecialchars($user_row['primary_contact_name']); ?> (<?php echo ucfirst($user_row['primary_contact_type']); ?>)
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($user_row['councillor_rbm_name'])): ?>
+                                                                    <br>RBM: <?php echo htmlspecialchars($user_row['councillor_rbm_name']); ?>
+                                                                <?php endif; ?>
+                                                            <?php elseif ($user_row['user_type'] == 'rbm'): ?>
+                                                                Branch: <?php echo htmlspecialchars($user_row['branch'] ?? 'N/A'); ?>
                                                             <?php endif; ?>
                                                         </small>
                                                     </td>
