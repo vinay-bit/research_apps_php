@@ -171,7 +171,26 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 <tr>
                                                     <td>
                                                         <div class="d-flex align-items-center">
-                                                            <img src="../Apps/assets/img/avatars/<?php echo ($user_row['id'] % 7) + 1; ?>.png" alt="Avatar" class="w-px-40 h-auto rounded-circle me-3" />
+                                                            <div class="avatar-wrapper">
+                                                                <div class="avatar avatar-sm me-3">
+                                                                    <span class="avatar-initial rounded-circle <?php 
+                                                                        switch($user_row['user_type']) {
+                                                                            case 'admin': echo 'bg-label-warning'; break;
+                                                                            case 'mentor': echo 'bg-label-primary'; break;
+                                                                            case 'councillor': echo 'bg-label-info'; break;
+                                                                            default: echo 'bg-label-secondary';
+                                                                        }
+                                                                    ?>">
+                                                                        <?php 
+                                                                        $names = explode(' ', $user_row['full_name']);
+                                                                        $initials = '';
+                                                                        $initials .= isset($names[0]) ? strtoupper(substr($names[0], 0, 1)) : '';
+                                                                        $initials .= isset($names[1]) ? strtoupper(substr($names[1], 0, 1)) : '';
+                                                                        echo $initials;
+                                                                        ?>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
                                                             <div>
                                                                 <strong><?php echo htmlspecialchars($user_row['full_name']); ?></strong>
                                                             </div>
