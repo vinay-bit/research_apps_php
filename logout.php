@@ -5,4 +5,4 @@ require_once 'includes/auth.php';
 clearUserSession();
 header("Location: login.php?message=logged_out");
 exit();
-?> 
+?>

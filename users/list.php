@@ -270,18 +270,14 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                                 <i class="bx bx-dots-vertical-rounded"></i>
                                                             </button>
                                                             <div class="dropdown-menu">
-                                                                                                                    <a class="dropdown-item" href="/research_apps/users/view.php?id=<?php echo $user_row['id']; ?>">
-                                                        <i class="bx bx-show me-1"></i> View
-                                                    </a>
-                                                    <?php if (hasPermission('admin')): ?>
-                                                    <a class="dropdown-item" href="/research_apps/users/edit.php?id=<?php echo $user_row['id']; ?>">
-                                                                    <i class="bx bx-edit-alt me-1"></i> Edit
-                                                                </a>
-                                                                <?php if ($user_row['id'] != $current_user['id']): ?>
-                                                                <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete(<?php echo $user_row['id']; ?>)">
+                                                                <?php if (hasPermission('admin')): ?>
+                                                                <a class="dropdown-item text-danger" href="?delete=<?php echo $user_row['id']; ?>" onclick="return confirm('Are you sure you want to delete this user?')">
                                                                     <i class="bx bx-trash me-1"></i> Delete
                                                                 </a>
-                                                                <?php endif; ?>
+                                                                <?php else: ?>
+                                                                <span class="dropdown-item text-muted">
+                                                                    <i class="bx bx-info-circle me-1"></i> View Only
+                                                                </span>
                                                                 <?php endif; ?>
                                                             </div>
                                                         </div>
@@ -328,4 +324,4 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     </script>
 </body>
-</html> 
+</html>

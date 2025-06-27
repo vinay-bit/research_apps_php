@@ -9,4 +9,4 @@
             <a href="#" target="_blank" class="footer-link me-4">Support</a>
         </div>
     </div>
-</footer> 
+</footer>

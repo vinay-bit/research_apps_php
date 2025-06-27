@@ -193,10 +193,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </li>
         
         <li class="menu-item">
-            <a href="/research_apps/profile.php" class="menu-link">
+            <a href="/research_apps/dashboard.php" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-cog"></i>
                 <div data-i18n="Profile">My Profile</div>
             </a>
         </li>
     </ul>
-</aside> 
+</aside>

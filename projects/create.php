@@ -24,8 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         // Handle new subject addition
         if (isset($_POST['add_subject']) && !empty($_POST['new_subject'])) {
-            $subject_code = !empty($_POST['new_subject_code']) ? $_POST['new_subject_code'] : '';
-            $project->addSubject($_POST['new_subject'], $subject_code);
+            $project->addSubject($_POST['new_subject']);
             $message = "New subject added successfully!";
         }
         
@@ -57,6 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Assign students
                 if (!empty($_POST['assigned_students'])) {
                     $project->assignStudents($project_id, $_POST['assigned_students']);
+                }
+                
+                // Assign mentors
+                if (!empty($_POST['assigned_mentors'])) {
+                    $project->assignMentors($project_id, $_POST['assigned_mentors']);
                 }
                 
                 // Assign tags
@@ -122,11 +126,36 @@ $tags = $project->getTags();
             overflow-y: auto;
             border: 1px solid #d9dee3;
             border-radius: 0.375rem;
-            padding: 0.5rem;
+            padding: 0.75rem;
+            background-color: #f8f9fa;
         }
         .multi-select-item {
-            padding: 0.25rem 0;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e9ecef;
         }
+        .multi-select-item:last-child {
+            border-bottom: none;
+        }
+        .form-check-label {
+            cursor: pointer;
+            width: 100%;
+        }
+        .form-check-label .badge {
+            font-size: 0.875rem;
+            padding: 0.5rem 0.75rem;
+        }
+        .tag-badge {
+            color: #495057 !important;
+            font-weight: 500;
+            border: none;
+        }
+        .tag-primary { background-color: #e3f2fd; border-color: #2196f3; color: #1976d2 !important; }
+        .tag-success { background-color: #e8f5e8; border-color: #4caf50; color: #388e3c !important; }
+        .tag-info { background-color: #e1f5fe; border-color: #00bcd4; color: #0097a7 !important; }
+        .tag-warning { background-color: #fff8e1; border-color: #ff9800; color: #f57c00 !important; }
+        .tag-danger { background-color: #ffebee; border-color: #f44336; color: #d32f2f !important; }
+        .tag-secondary { background-color: #f5f5f5; border-color: #9e9e9e; color: #424242 !important; }
+        .tag-dark { background-color: #f5f5f5; border-color: #424242; color: #212121 !important; }
         .tag-preview {
             display: inline-block;
             padding: 0.25rem 0.5rem;
@@ -163,7 +192,7 @@ $tags = $project->getTags();
                                         <h5 class="mb-0">
                                             <span class="text-muted fw-light">Project Management /</span> Create New Project
                                         </h5>
-                                        <a href="list.php" class="btn btn-secondary">
+                                        <a href="/research_apps/projects/list.php" class="btn btn-secondary">
                                             <i class="bx bx-arrow-back me-1"></i> Back to List
                                         </a>
                                     </div>
@@ -265,6 +294,29 @@ $tags = $project->getTags();
                                         </div>
                                         <div class="row">
                                             <div class="col-12 mb-3">
+                                                <label class="form-label">Additional Mentors</label>
+                                                <div class="multi-select-container">
+                                                    <?php foreach ($mentors as $mentor): ?>
+                                                        <div class="multi-select-item">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" name="assigned_mentors[]" value="<?php echo $mentor['id']; ?>" id="mentor_<?php echo $mentor['id']; ?>">
+                                                                <label class="form-check-label" for="mentor_<?php echo $mentor['id']; ?>">
+                                                                    <strong><?php echo htmlspecialchars($mentor['full_name']); ?></strong>
+                                                                    <?php if ($mentor['specialization']): ?>
+                                                                        <small class="text-muted">
+                                                                            - <?php echo htmlspecialchars($mentor['specialization']); ?>
+                                                                        </small>
+                                                                    <?php endif; ?>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                                <div class="form-text">Select additional mentors to assist with this project (optional)</div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-12 mb-3">
                                                 <label class="form-label">Assigned Students</label>
                                                 <div class="multi-select-container">
                                                     <?php foreach ($students as $student): ?>
@@ -307,9 +359,6 @@ $tags = $project->getTags();
                                                         <?php foreach ($subjects as $subject): ?>
                                                             <option value="<?php echo $subject['id']; ?>">
                                                                 <?php echo htmlspecialchars($subject['subject_name']); ?>
-                                                                <?php if ($subject['subject_code']): ?>
-                                                                    (<?php echo htmlspecialchars($subject['subject_code']); ?>)
-                                                                <?php endif; ?>
                                                             </option>
                                                         <?php endforeach; ?>
                                                     </select>
@@ -330,24 +379,29 @@ $tags = $project->getTags();
                                             <div class="col-12 mb-3">
                                                 <label class="form-label">Project Tags</label>
                                                 <div class="multi-select-container">
-                                                    <?php foreach ($tags as $tag): ?>
-                                                        <div class="multi-select-item">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" name="assigned_tags[]" value="<?php echo $tag['id']; ?>" id="tag_<?php echo $tag['id']; ?>">
-                                                                <label class="form-check-label" for="tag_<?php echo $tag['id']; ?>">
-                                                                    <span class="tag-preview" style="background-color: <?php echo $tag['tag_color']; ?>">
-                                                                        <?php echo htmlspecialchars($tag['tag_name']); ?>
-                                                                    </span>
-                                                                </label>
+                                                    <?php if (empty($tags)): ?>
+                                                        <p class="text-muted">No tags available. <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addTagModal">Add the first tag</button></p>
+                                                    <?php else: ?>
+                                                        <?php foreach ($tags as $tag): ?>
+                                                            <div class="multi-select-item">
+                                                                <div class="form-check">
+                                                                    <input class="form-check-input" type="checkbox" name="assigned_tags[]" value="<?php echo $tag['id']; ?>" id="tag_<?php echo $tag['id']; ?>">
+                                                                    <label class="form-check-label" for="tag_<?php echo $tag['id']; ?>">
+                                                                        <span class="badge tag-badge tag-<?php echo htmlspecialchars($tag['color']); ?> me-1">
+                                                                            <?php echo htmlspecialchars($tag['tag_name']); ?>
+                                                                        </span>
+                                                                    </label>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    <?php endforeach; ?>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
                                                 </div>
                                                 <div class="mt-2">
                                                     <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addTagModal">
                                                         <i class="bx bx-plus me-1"></i> Add New Tag
                                                     </button>
                                                 </div>
+                                                <small class="text-muted">Available tags: <?php echo count($tags); ?></small>
                                             </div>
                                         </div>
                                     </div>
@@ -412,7 +466,7 @@ $tags = $project->getTags();
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between">
-                                            <a href="list.php" class="btn btn-secondary">
+                                            <a href="/research_apps/projects/list.php" class="btn btn-secondary">
                                                 <i class="bx bx-x me-1"></i> Cancel
                                             </a>
                                             <button type="submit" name="create_project" class="btn btn-primary">
@@ -479,10 +533,6 @@ $tags = $project->getTags();
                         <div class="mb-3">
                             <label class="form-label">Subject Name</label>
                             <input type="text" class="form-control" name="new_subject" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Subject Code (Optional)</label>
-                            <input type="text" class="form-control" name="new_subject_code">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -559,4 +609,4 @@ $tags = $project->getTags();
     </script>
 </body>
 
-</html> 
+</html>

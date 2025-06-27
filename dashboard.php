@@ -28,6 +28,35 @@ $query = "SELECT COUNT(*) as count FROM students";
 $stmt = $db->prepare($query);
 $stmt->execute();
 $student_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+// Get project statistics
+// Total active projects (not completed)
+$query = "SELECT COUNT(*) as count FROM projects p 
+          JOIN project_statuses ps ON p.status_id = ps.id 
+          WHERE ps.status_name NOT LIKE '%completed%'";
+$stmt = $db->prepare($query);
+$stmt->execute();
+$active_projects = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+// Projects with missed deadlines (end_date < today and not completed)
+$query = "SELECT COUNT(*) as count FROM projects p 
+          JOIN project_statuses ps ON p.status_id = ps.id 
+          WHERE p.end_date < CURDATE() 
+          AND ps.status_name NOT LIKE '%completed%'
+          AND p.end_date IS NOT NULL";
+$stmt = $db->prepare($query);
+$stmt->execute();
+$missed_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+// Projects approaching deadline (end_date within 7 days and not completed)
+$query = "SELECT COUNT(*) as count FROM projects p 
+          JOIN project_statuses ps ON p.status_id = ps.id 
+          WHERE p.end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+          AND ps.status_name NOT LIKE '%completed%'
+          AND p.end_date IS NOT NULL";
+$stmt = $db->prepare($query);
+$stmt->execute();
+$approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 ?>
 <!DOCTYPE html>
 <html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="Apps/assets/" data-template="vertical-menu-template-free">
@@ -89,10 +118,11 @@ $student_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                                 <h5 class="card-title text-primary">Welcome back, <?php echo htmlspecialchars($current_user['full_name']); ?>! 🎉</h5>
                                                 <p class="mb-4">
                                                     You are logged in as <span class="fw-bold"><?php echo ucfirst($current_user['user_type']); ?></span>. 
-                                                    Use the navigation menu to manage users, students, and access research applications.
+                                                    Use the navigation menu to manage users, students, projects, and access research applications.
                                                 </p>
+                                                <a href="/research_apps/projects/list.php" class="btn btn-sm btn-primary me-2">View Projects</a>
                                                 <a href="/research_apps/users/list.php" class="btn btn-sm btn-outline-primary me-2">View Users</a>
-                                                <a href="/research_apps/students/list.php" class="btn btn-sm btn-primary">View Students</a>
+                                                <a href="/research_apps/students/list.php" class="btn btn-sm btn-outline-secondary">View Students</a>
                                             </div>
                                         </div>
                                         <div class="col-sm-5 text-center text-sm-left">
@@ -129,6 +159,96 @@ $student_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                                 <span>Total Students</span>
                                                 <h3 class="card-title text-nowrap mb-1"><?php echo $student_count; ?></h3>
                                                 <small class="text-success fw-semibold"><i class="bx bx-user-circle"></i> Active</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Project Statistics Cards -->
+                        <div class="row">
+                            <div class="col-md-4 col-lg-4 col-xl-4 order-0 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">Active Projects</h5>
+                                                    <span class="badge bg-label-success rounded-pill">In Progress</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0"><?php echo $active_projects; ?></h3>
+                                                    <small class="text-success fw-semibold">
+                                                        <i class="bx bx-trending-up"></i> 
+                                                        <a href="/research_apps/projects/list.php" class="text-success">View All</a>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="avatar flex-shrink-0">
+                                                <span class="avatar-initial rounded bg-label-success">
+                                                    <i class="bx bx-briefcase"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-4 col-xl-4 order-1 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">Missed Deadlines</h5>
+                                                    <span class="badge bg-danger rounded-pill">Overdue</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0 text-danger"><?php echo $missed_deadlines; ?></h3>
+                                                    <small class="text-danger fw-semibold">
+                                                        <i class="bx bx-error-circle"></i> 
+                                                        <?php if ($missed_deadlines > 0): ?>
+                                                            <a href="/research_apps/projects/list.php?filter=overdue" class="text-danger">View Overdue</a>
+                                                        <?php else: ?>
+                                                            All on track
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="avatar flex-shrink-0">
+                                                <span class="avatar-initial rounded bg-danger">
+                                                    <i class="bx bx-time"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-4 col-xl-4 order-2 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">Approaching Deadline</h5>
+                                                    <span class="badge bg-warning rounded-pill">Due Soon</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0 text-warning"><?php echo $approaching_deadlines; ?></h3>
+                                                    <small class="text-warning fw-semibold">
+                                                        <i class="bx bx-alarm"></i> 
+                                                        <?php if ($approaching_deadlines > 0): ?>
+                                                            <a href="/research_apps/projects/list.php?filter=due_soon" class="text-warning">View Due Soon</a>
+                                                        <?php else: ?>
+                                                            No urgent items
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="avatar flex-shrink-0">
+                                                <span class="avatar-initial rounded bg-warning">
+                                                    <i class="bx bx-calendar-exclamation"></i>
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -293,4 +413,4 @@ $student_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
     <script src="Apps/assets/js/main.js"></script>
     <script src="Apps/assets/js/dashboards-analytics.js"></script>
 </body>
-</html> 
+</html>

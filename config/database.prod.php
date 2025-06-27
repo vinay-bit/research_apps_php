@@ -55,4 +55,4 @@ class Database {
  * 
  * 5. Remove setup_database.php after successful deployment
  */
-?> 
+?>

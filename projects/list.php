@@ -11,6 +11,16 @@ if (!isset($_SESSION['user_id'])) {
 
 $project = new Project();
 
+// Handle delete request
+if (isset($_GET['delete']) && is_numeric($_GET['delete']) && hasPermission('admin')) {
+    $project_id = intval($_GET['delete']);
+    if ($project->delete($project_id)) {
+        $success_message = "Project deleted successfully!";
+    } else {
+        $error_message = "Error deleting project. Please try again.";
+    }
+}
+
 // Handle filters
 $filters = [];
 if (isset($_GET['status']) && !empty($_GET['status'])) {
@@ -92,6 +102,20 @@ $current_user = $_SESSION;
                 <div class="content-wrapper">
                     <!-- Content -->
                     <div class="container-xxl flex-grow-1 container-p-y">
+                        <?php if (isset($success_message)): ?>
+                            <div class="alert alert-success alert-dismissible" role="alert">
+                                <?php echo htmlspecialchars($success_message); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (isset($error_message)): ?>
+                            <div class="alert alert-danger alert-dismissible" role="alert">
+                                <?php echo htmlspecialchars($error_message); ?>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        <?php endif; ?>
+
                         <!-- Header -->
                         <div class="row">
                             <div class="col-12">
@@ -101,8 +125,8 @@ $current_user = $_SESSION;
                                             <span class="text-muted fw-light">Project Management /</span> All Projects
                                         </h5>
                                         <div>
-                                            <a href="create.php" class="btn btn-primary">
-                                                <i class="bx bx-plus me-1"></i> Add New Project
+                                            <a href="/research_apps/projects/create.php" class="btn btn-primary">
+                                                <i class="bx bx-plus me-1"></i> Create New Project
                                             </a>
                                         </div>
                                     </div>
@@ -254,7 +278,7 @@ $current_user = $_SESSION;
                                             <th>Lead Mentor</th>
                                             <th>Subject</th>
                                             <th>Prototype</th>
-                                            <th>Timeline</th>
+                                            <th>Timeline & Deadline</th>
                                             <th>RBM</th>
                                             <th>Actions</th>
                                         </tr>
@@ -267,8 +291,8 @@ $current_user = $_SESSION;
                                                         <i class="bx bx-folder-open display-4 text-muted"></i>
                                                         <h5 class="mt-2">No projects found</h5>
                                                         <p class="text-muted">Create your first project to get started.</p>
-                                                        <a href="create.php" class="btn btn-primary">
-                                                            <i class="bx bx-plus me-1"></i> Add New Project
+                                                        <a href="/research_apps/projects/create.php" class="btn btn-primary">
+                                                            <i class="bx bx-plus me-1"></i> Create New Project
                                                         </a>
                                                     </div>
                                                 </td>
@@ -348,7 +372,21 @@ $current_user = $_SESSION;
                                                             <small>
                                                                 <strong>Start:</strong> <?php echo date('M d, Y', strtotime($proj['start_date'])); ?><br>
                                                                 <?php if ($proj['end_date']): ?>
-                                                                    <strong>End:</strong> <?php echo date('M d, Y', strtotime($proj['end_date'])); ?>
+                                                                    <?php 
+                                                                    $end_date = strtotime($proj['end_date']);
+                                                                    $today = time();
+                                                                    $days_remaining = ceil(($end_date - $today) / (60 * 60 * 24));
+                                                                    ?>
+                                                                    <strong>Deadline:</strong> <?php echo date('M d, Y', $end_date); ?>
+                                                                    <?php if ($days_remaining < 0): ?>
+                                                                        <br><span class="badge bg-danger">Overdue by <?php echo abs($days_remaining); ?> days</span>
+                                                                    <?php elseif ($days_remaining <= 7): ?>
+                                                                        <br><span class="badge bg-warning">Due in <?php echo $days_remaining; ?> days</span>
+                                                                    <?php elseif ($days_remaining <= 30): ?>
+                                                                        <br><span class="badge bg-info"><?php echo $days_remaining; ?> days remaining</span>
+                                                                    <?php else: ?>
+                                                                        <br><span class="badge bg-success"><?php echo $days_remaining; ?> days remaining</span>
+                                                                    <?php endif; ?>
                                                                 <?php endif; ?>
                                                             </small>
                                                         <?php else: ?>
@@ -384,17 +422,24 @@ $current_user = $_SESSION;
                                                                     <i class="bx bx-show me-1"></i> View Details
                                                                 </a>
                                                                 <a class="dropdown-item" href="edit.php?id=<?php echo $proj['id']; ?>">
-                                                                    <i class="bx bx-edit-alt me-1"></i> Edit
+                                                                    <i class="bx bx-edit me-1"></i> Edit Project
                                                                 </a>
                                                                 <?php if ($proj['drive_link']): ?>
+                                                                    <div class="dropdown-divider"></div>
                                                                     <a class="dropdown-item" href="<?php echo htmlspecialchars($proj['drive_link']); ?>" target="_blank">
                                                                         <i class="bx bx-link-external me-1"></i> Drive Link
                                                                     </a>
                                                                 <?php endif; ?>
                                                                 <div class="dropdown-divider"></div>
-                                                                <a class="dropdown-item text-danger" href="#" onclick="confirmDelete(<?php echo $proj['id']; ?>, '<?php echo htmlspecialchars($proj['project_name']); ?>')">
+                                                                <?php if (hasPermission('admin')): ?>
+                                                                <a class="dropdown-item text-danger" href="?delete=<?php echo $proj['id']; ?>" onclick="return confirm('Are you sure you want to delete the project <?php echo htmlspecialchars($proj['project_name']); ?>? This action cannot be undone.')">
                                                                     <i class="bx bx-trash me-1"></i> Delete
                                                                 </a>
+                                                                <?php else: ?>
+                                                                <span class="dropdown-item text-muted">
+                                                                    <i class="bx bx-info-circle me-1"></i> View Only
+                                                                </span>
+                                                                <?php endif; ?>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -435,12 +480,6 @@ $current_user = $_SESSION;
     <script src="../Apps/assets/js/main.js"></script>
 
     <script>
-        function confirmDelete(projectId, projectName) {
-            if (confirm('Are you sure you want to delete the project "' + projectName + '"? This action cannot be undone.')) {
-                window.location.href = 'delete.php?id=' + projectId;
-            }
-        }
-
         // Auto-submit form on filter change
         document.querySelectorAll('select[name="status"], select[name="mentor"], select[name="rbm"], select[name="subject"]').forEach(function(select) {
             select.addEventListener('change', function() {
@@ -450,4 +489,4 @@ $current_user = $_SESSION;
     </script>
 </body>
 
-</html> 
+</html>

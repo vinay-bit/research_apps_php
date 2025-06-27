@@ -301,16 +301,14 @@ $page_title = "Student Management";
                                                                 <i class="bx bx-dots-vertical-rounded"></i>
                                                             </button>
                                                             <div class="dropdown-menu">
-                                                                <a class="dropdown-item" href="/research_apps/students/view.php?id=<?php echo $student_row['id']; ?>">
-                                                                    <i class="bx bx-show me-1"></i> View
-                                                                </a>
-                                                                <a class="dropdown-item" href="/research_apps/students/edit.php?id=<?php echo $student_row['id']; ?>">
-                                                                    <i class="bx bx-edit-alt me-1"></i> Edit
-                                                                </a>
                                                                 <?php if (hasPermission('admin')): ?>
-                                                                <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="confirmDelete(<?php echo $student_row['id']; ?>)">
+                                                                <a class="dropdown-item text-danger" href="?delete=<?php echo $student_row['id']; ?>" onclick="return confirm('Are you sure you want to delete this student?')">
                                                                     <i class="bx bx-trash me-1"></i> Delete
                                                                 </a>
+                                                                <?php else: ?>
+                                                                <span class="dropdown-item text-muted">
+                                                                    <i class="bx bx-info-circle me-1"></i> View Only
+                                                                </span>
                                                                 <?php endif; ?>
                                                             </div>
                                                         </div>
@@ -357,4 +355,4 @@ $page_title = "Student Management";
         }
     </script>
 </body>
-</html> 
+</html>

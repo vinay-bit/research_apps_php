@@ -372,4 +372,4 @@ $page_title = "Add Student";
         });
     </script>
 </body>
-</html> 
+</html>

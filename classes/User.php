@@ -240,5 +240,14 @@ class User {
         $stmt->execute();
         return $stmt;
     }
+    
+    // Get users by type
+    public function getByType($user_type) {
+        $query = "SELECT id, full_name, username, specialization, branch FROM users WHERE user_type = :user_type AND status = 'active' ORDER BY full_name";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_type', $user_type);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
-?> 
+?>

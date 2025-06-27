@@ -88,7 +88,7 @@ class Project {
                   LEFT JOIN subjects s ON p.subject_id = s.id
                   LEFT JOIN users mentor ON p.lead_mentor_id = mentor.id
                   LEFT JOIN users rbm ON p.rbm_id = rbm.id
-                  WHERE p.is_active = 1";
+                  WHERE 1 = 1";
         
         // Apply filters
         $params = [];
@@ -137,7 +137,7 @@ class Project {
                   LEFT JOIN subjects s ON p.subject_id = s.id
                   LEFT JOIN users mentor ON p.lead_mentor_id = mentor.id
                   LEFT JOIN users rbm ON p.rbm_id = rbm.id
-                  WHERE p.id = :id AND p.is_active = 1";
+                  WHERE p.id = :id";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
@@ -190,9 +190,9 @@ class Project {
         return $stmt->execute();
     }
     
-    // Delete project (soft delete)
+    // Delete project
     public function delete($id) {
-        $query = "UPDATE " . $this->table_name . " SET is_active = 0 WHERE id = :id";
+        $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         return $stmt->execute();
@@ -200,7 +200,7 @@ class Project {
     
     // Get all project statuses
     public function getStatuses() {
-        $query = "SELECT * FROM project_statuses WHERE is_active = 1 ORDER BY status_order";
+        $query = "SELECT * FROM project_statuses ORDER BY id";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -208,8 +208,7 @@ class Project {
     
     // Add new status
     public function addStatus($status_name) {
-        $query = "INSERT INTO project_statuses (status_name, status_order) 
-                  VALUES (:status_name, (SELECT COALESCE(MAX(status_order), 0) + 1 FROM project_statuses ps))";
+        $query = "INSERT INTO project_statuses (status_name) VALUES (:status_name)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':status_name', $status_name);
         return $stmt->execute();
@@ -217,24 +216,23 @@ class Project {
     
     // Get all subjects
     public function getSubjects() {
-        $query = "SELECT * FROM subjects WHERE is_active = 1 ORDER BY subject_name";
+        $query = "SELECT * FROM subjects ORDER BY subject_name";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     // Add new subject
-    public function addSubject($subject_name, $subject_code = '') {
-        $query = "INSERT INTO subjects (subject_name, subject_code) VALUES (:subject_name, :subject_code)";
+    public function addSubject($subject_name) {
+        $query = "INSERT INTO subjects (subject_name) VALUES (:subject_name)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':subject_name', $subject_name);
-        $stmt->bindParam(':subject_code', $subject_code);
         return $stmt->execute();
     }
     
     // Get all mentors
     public function getMentors() {
-        $query = "SELECT id, full_name, email, specialization 
+        $query = "SELECT id, full_name, specialization 
                   FROM users 
                   WHERE user_type = 'mentor' AND status = 'active' 
                   ORDER BY full_name";
@@ -245,7 +243,7 @@ class Project {
     
     // Get all RBMs
     public function getRBMs() {
-        $query = "SELECT id, full_name, email, branch 
+        $query = "SELECT id, full_name, branch 
                   FROM users 
                   WHERE user_type = 'rbm' AND status = 'active' 
                   ORDER BY full_name";
@@ -267,18 +265,18 @@ class Project {
     
     // Get all tags
     public function getTags() {
-        $query = "SELECT * FROM project_tags WHERE is_active = 1 ORDER BY tag_name";
+        $query = "SELECT * FROM project_tags ORDER BY tag_name";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
     // Add new tag
-    public function addTag($tag_name, $tag_color = '#007bff') {
-        $query = "INSERT INTO project_tags (tag_name, tag_color) VALUES (:tag_name, :tag_color)";
+    public function addTag($tag_name, $color = 'primary') {
+        $query = "INSERT INTO project_tags (tag_name, color) VALUES (:tag_name, :color)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':tag_name', $tag_name);
-        $stmt->bindParam(':tag_color', $tag_color);
+        $stmt->bindParam(':color', $color);
         return $stmt->execute();
     }
     
@@ -306,10 +304,10 @@ class Project {
     
     // Get assigned students for a project
     public function getAssignedStudents($project_id) {
-        $query = "SELECT s.id, s.student_id, s.full_name, s.grade, s.email_address, ps.assigned_date
+        $query = "SELECT s.id, s.student_id, s.full_name, s.grade, s.email_address, ps.assigned_at
                   FROM students s
                   JOIN project_students ps ON s.id = ps.student_id
-                  WHERE ps.project_id = :project_id AND ps.is_active = 1
+                  WHERE ps.project_id = :project_id
                   ORDER BY s.full_name";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':project_id', $project_id);
@@ -341,7 +339,7 @@ class Project {
     
     // Get assigned tags for a project
     public function getAssignedTags($project_id) {
-        $query = "SELECT t.id, t.tag_name, t.tag_color
+        $query = "SELECT t.id, t.tag_name, t.color
                   FROM project_tags t
                   JOIN project_tag_assignments pta ON t.id = pta.tag_id
                   WHERE pta.project_id = :project_id
@@ -357,7 +355,7 @@ class Project {
         $stats = [];
         
         // Total projects
-        $query = "SELECT COUNT(*) as total FROM projects WHERE is_active = 1";
+        $query = "SELECT COUNT(*) as total FROM projects";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $stats['total_projects'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
@@ -366,15 +364,14 @@ class Project {
         $query = "SELECT ps.status_name, COUNT(*) as count
                   FROM projects p
                   JOIN project_statuses ps ON p.status_id = ps.id
-                  WHERE p.is_active = 1
                   GROUP BY ps.status_name
-                  ORDER BY ps.status_order";
+                  ORDER BY ps.id";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $stats['by_status'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Projects with prototypes
-        $query = "SELECT COUNT(*) as total FROM projects WHERE has_prototype = 'Yes' AND is_active = 1";
+        $query = "SELECT COUNT(*) as total FROM projects WHERE has_prototype = 'Yes'";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $stats['with_prototypes'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
@@ -383,7 +380,6 @@ class Project {
         $query = "SELECT s.subject_name, COUNT(*) as count
                   FROM projects p
                   JOIN subjects s ON p.subject_id = s.id
-                  WHERE p.is_active = 1
                   GROUP BY s.subject_name
                   ORDER BY count DESC
                   LIMIT 5";
@@ -408,5 +404,87 @@ class Project {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    // Assign mentors to project
+    public function assignMentors($project_id, $mentor_ids) {
+        // First, remove existing assignments
+        $query = "DELETE FROM project_mentors WHERE project_id = :project_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':project_id', $project_id);
+        $stmt->execute();
+        
+        // Add new assignments
+        if (!empty($mentor_ids)) {
+            $query = "INSERT INTO project_mentors (project_id, mentor_id) VALUES (:project_id, :mentor_id)";
+            $stmt = $this->conn->prepare($query);
+            
+            foreach ($mentor_ids as $mentor_id) {
+                $stmt->bindParam(':project_id', $project_id);
+                $stmt->bindParam(':mentor_id', $mentor_id);
+                $stmt->execute();
+            }
+        }
+        return true;
+    }
+    
+    // Get assigned mentors for a project
+    public function getAssignedMentors($project_id) {
+        $query = "SELECT u.id, u.full_name, u.specialization, pm.assigned_date
+                  FROM users u
+                  JOIN project_mentors pm ON u.id = pm.mentor_id
+                  WHERE pm.project_id = :project_id
+                  ORDER BY u.full_name";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':project_id', $project_id);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Alias methods for edit.php compatibility
+    public function getAllStatuses() {
+        return $this->getStatuses();
+    }
+    
+    public function getAllSubjects() {
+        return $this->getSubjects();
+    }
+    
+    public function getAllTags() {
+        return $this->getTags();
+    }
+    
+    // Update assignment methods for edit.php compatibility
+    public function updateStudentAssignments($project_id, $student_ids) {
+        return $this->assignStudents($project_id, $student_ids);
+    }
+    
+    public function updateMentorAssignments($project_id, $mentor_ids) {
+        return $this->assignMentors($project_id, $mentor_ids);
+    }
+    
+    public function updateTagAssignments($project_id, $tag_ids) {
+        return $this->assignTags($project_id, $tag_ids);
+    }
+    
+    // Update project method that accepts project_id and data array
+    public function updateProject($project_id, $data) {
+        // Set the properties from the data array
+        $this->id = $project_id;
+        $this->project_name = $data['project_name'];
+        $this->description = $data['description'];
+        $this->status_id = $data['status_id'];
+        $this->lead_mentor_id = $data['lead_mentor_id'];
+        $this->subject_id = $data['subject_id'];
+        $this->has_prototype = $data['has_prototype'];
+        $this->start_date = $data['start_date'];
+        $this->assigned_date = $data['assigned_date'];
+        $this->completion_date = $data['completion_date'];
+        $this->drive_link = $data['drive_link'];
+        $this->rbm_id = $data['rbm_id'];
+        $this->notes = $data['notes'];
+        
+        // Call the existing update method
+        return $this->update();
+    }
 }
-?> 
+?>
