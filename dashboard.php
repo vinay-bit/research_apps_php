@@ -63,7 +63,7 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-    <title>Dashboard - Research Apps</title>
+    <title>Dashboard - OMOTEC Research Platform</title>
     <meta name="description" content="" />
 
     <!-- Favicon -->
@@ -81,6 +81,9 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
     <link rel="stylesheet" href="Apps/assets/vendor/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="Apps/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
     <link rel="stylesheet" href="Apps/assets/css/demo.css" />
+    
+    <!-- OMOTEC Custom Theme -->
+    <link rel="stylesheet" href="Apps/assets/css/omotec-theme.css" />
 
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
@@ -115,10 +118,10 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                     <div class="d-flex align-items-end row">
                                         <div class="col-sm-7">
                                             <div class="card-body">
-                                                <h5 class="card-title text-primary">Welcome back, <?php echo htmlspecialchars($current_user['full_name']); ?>! 🎉</h5>
+                                                <h5 class="card-title text-primary">Welcome to OMOTEC Research, <?php echo htmlspecialchars($current_user['full_name']); ?>! 🎉</h5>
                                                 <p class="mb-4">
-                                                    You are logged in as <span class="fw-bold"><?php echo ucfirst($current_user['user_type']); ?></span>. 
-                                                    Use the navigation menu to manage users, students, projects, and access research applications.
+                                                    <strong>Learn Tech For Future</strong> - You are logged in as <span class="fw-bold"><?php echo ucfirst($current_user['user_type']); ?></span>. 
+                                                    Use the navigation menu to manage users, students, projects, and access our research management platform.
                                                 </p>
                                                 <a href="/research_apps/projects/list.php" class="btn btn-sm btn-primary me-2">View Projects</a>
                                                 <a href="/research_apps/users/list.php" class="btn btn-sm btn-outline-primary me-2">View Users</a>

@@ -140,6 +140,9 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
     <link rel="stylesheet" href="../Apps/assets/vendor/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="../Apps/assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
     <link rel="stylesheet" href="../Apps/assets/css/demo.css" />
+    
+    <!-- OMOTEC Custom Theme -->
+    <link rel="stylesheet" href="../Apps/assets/css/omotec-theme.css" />
 
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />

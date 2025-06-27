@@ -143,6 +143,9 @@ if ($_POST) {
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
 
+    <!-- Custom OMOTEC Theme -->
+    <link rel="stylesheet" href="../Apps/assets/css/omotec-theme.css" />
+
     <!-- Helpers -->
     <script src="../Apps/assets/vendor/js/helpers.js"></script>
     <script src="../Apps/assets/js/config.js"></script>
