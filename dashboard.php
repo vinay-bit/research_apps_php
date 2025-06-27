@@ -83,7 +83,7 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
     <link rel="stylesheet" href="Apps/assets/css/demo.css" />
     
     <!-- OMOTEC Custom Theme -->
-    <link rel="stylesheet" href="Apps/assets/css/omotec-theme.css" />
+
 
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />

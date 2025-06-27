@@ -114,7 +114,7 @@ $tags = $project->getTags();
     <link rel="stylesheet" href="../Apps/assets/css/demo.css" />
     
     <!-- OMOTEC Custom Theme -->
-    <link rel="stylesheet" href="../Apps/assets/css/omotec-theme.css" />
+
 
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
