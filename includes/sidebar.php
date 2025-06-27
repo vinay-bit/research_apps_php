@@ -142,12 +142,28 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
         
-        <li class="menu-item">
-            <a href="#" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-task"></i>
+        <!-- Project Management -->
+        <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Project Management</span>
+        </li>
+        
+        <li class="menu-item <?php echo (strpos($current_page, 'project') !== false) ? 'active open' : ''; ?>">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-folder"></i>
                 <div data-i18n="Projects">Projects</div>
-                <div class="badge bg-danger rounded-pill ms-auto">Soon</div>
             </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?php echo ($current_page == 'list.php' && strpos($_SERVER['REQUEST_URI'], 'projects') !== false) ? 'active' : ''; ?>">
+                    <a href="/research_apps/projects/list.php" class="menu-link">
+                        <div data-i18n="All Projects">All Projects</div>
+                    </a>
+                </li>
+                <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'projects') !== false) ? 'active' : ''; ?>">
+                    <a href="/research_apps/projects/create.php" class="menu-link">
+                        <div data-i18n="Create Project">Create Project</div>
+                    </a>
+                </li>
+            </ul>
         </li>
         
         <li class="menu-item">
