@@ -5,7 +5,7 @@ require_once '../classes/Project.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /research_apps/login.php");
+    header("Location: /login.php");
     exit();
 }
 
@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $project->subject_id = !empty($_POST['subject_id']) ? $_POST['subject_id'] : null;
             $project->has_prototype = $_POST['has_prototype'];
             $project->start_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+            $project->end_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
             $project->assigned_date = !empty($_POST['assigned_date']) ? $_POST['assigned_date'] : null;
             $project->completion_date = !empty($_POST['completion_date']) ? $_POST['completion_date'] : null;
             $project->drive_link = $_POST['drive_link'];
@@ -118,6 +119,9 @@ $tags = $project->getTags();
 
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+
+    <!-- Tom Select Bootstrap 5 theme CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
 
     <!-- Helpers -->
     <script src="../Apps/assets/vendor/js/helpers.js"></script>
@@ -195,7 +199,7 @@ $tags = $project->getTags();
                                         <h5 class="mb-0">
                                             <span class="text-muted fw-light">Project Management /</span> Create New Project
                                         </h5>
-                                        <a href="/research_apps/projects/list.php" class="btn btn-secondary">
+                                        <a href="/projects/list.php" class="btn btn-secondary">
                                             <i class="bx bx-arrow-back me-1"></i> Back to List
                                         </a>
                                     </div>
@@ -298,47 +302,32 @@ $tags = $project->getTags();
                                         <div class="row">
                                             <div class="col-12 mb-3">
                                                 <label class="form-label">Additional Mentors</label>
-                                                <div class="multi-select-container">
+                                                <select id="additional-mentors-select" class="form-select" multiple placeholder="Select additional mentors..." name="assigned_mentors[]">
                                                     <?php foreach ($mentors as $mentor): ?>
-                                                        <div class="multi-select-item">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" name="assigned_mentors[]" value="<?php echo $mentor['id']; ?>" id="mentor_<?php echo $mentor['id']; ?>">
-                                                                <label class="form-check-label" for="mentor_<?php echo $mentor['id']; ?>">
-                                                                    <strong><?php echo htmlspecialchars($mentor['full_name']); ?></strong>
-                                                                    <?php if ($mentor['specialization']): ?>
-                                                                        <small class="text-muted">
-                                                                            - <?php echo htmlspecialchars($mentor['specialization']); ?>
-                                                                        </small>
-                                                                    <?php endif; ?>
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                                        <option value="<?php echo $mentor['id']; ?>">
+                                                            <?php echo htmlspecialchars($mentor['full_name']); ?>
+                                                            <?php if ($mentor['specialization']): ?>
+                                                                - <?php echo htmlspecialchars($mentor['specialization']); ?>
+                                                            <?php endif; ?>
+                                                        </option>
                                                     <?php endforeach; ?>
-                                                </div>
+                                                </select>
                                                 <div class="form-text">Select additional mentors to assist with this project (optional)</div>
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-12 mb-3">
                                                 <label class="form-label">Assigned Students</label>
-                                                <div class="multi-select-container">
+                                                <select id="assigned-students-select" class="form-select" multiple placeholder="Select students..." name="assigned_students[]">
                                                     <?php foreach ($students as $student): ?>
-                                                        <div class="multi-select-item">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox" name="assigned_students[]" value="<?php echo $student['id']; ?>" id="student_<?php echo $student['id']; ?>">
-                                                                <label class="form-check-label" for="student_<?php echo $student['id']; ?>">
-                                                                    <strong><?php echo htmlspecialchars($student['full_name']); ?></strong>
-                                                                    <small class="text-muted">
-                                                                        (<?php echo htmlspecialchars($student['student_id']); ?> - <?php echo htmlspecialchars($student['grade']); ?>)
-                                                                        <?php if ($student['affiliation']): ?>
-                                                                            - <?php echo htmlspecialchars($student['affiliation']); ?>
-                                                                        <?php endif; ?>
-                                                                    </small>
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                                        <option value="<?php echo $student['id']; ?>">
+                                                            <?php echo htmlspecialchars($student['full_name']); ?> (<?php echo htmlspecialchars($student['student_id']); ?> - <?php echo htmlspecialchars($student['grade']); ?>)
+                                                            <?php if ($student['affiliation']): ?>
+                                                                - <?php echo htmlspecialchars($student['affiliation']); ?>
+                                                            <?php endif; ?>
+                                                        </option>
                                                     <?php endforeach; ?>
-                                                </div>
+                                                </select>
                                                 <div class="form-text">Select multiple students to assign to this project</div>
                                             </div>
                                         </div>
@@ -381,30 +370,26 @@ $tags = $project->getTags();
                                         <div class="row">
                                             <div class="col-12 mb-3">
                                                 <label class="form-label">Project Tags</label>
-                                                <div class="multi-select-container">
-                                                    <?php if (empty($tags)): ?>
-                                                        <p class="text-muted">No tags available. <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addTagModal">Add the first tag</button></p>
-                                                    <?php else: ?>
+                                                <?php if (empty($tags)): ?>
+                                                    <div class="alert alert-info">
+                                                        <p class="mb-2">No tags available. <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addTagModal">Add the first tag</button></p>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <select id="project-tags-select" class="form-select" multiple placeholder="Select project tags..." name="assigned_tags[]">
                                                         <?php foreach ($tags as $tag): ?>
-                                                            <div class="multi-select-item">
-                                                                <div class="form-check">
-                                                                    <input class="form-check-input" type="checkbox" name="assigned_tags[]" value="<?php echo $tag['id']; ?>" id="tag_<?php echo $tag['id']; ?>">
-                                                                    <label class="form-check-label" for="tag_<?php echo $tag['id']; ?>">
-                                                                        <span class="badge tag-badge tag-<?php echo htmlspecialchars($tag['color']); ?> me-1">
-                                                                            <?php echo htmlspecialchars($tag['tag_name']); ?>
-                                                                        </span>
-                                                                    </label>
-                                                                </div>
-                                                            </div>
+                                                            <option value="<?php echo $tag['id']; ?>">
+                                                                <?php echo htmlspecialchars($tag['tag_name']); ?>
+                                                            </option>
                                                         <?php endforeach; ?>
-                                                    <?php endif; ?>
-                                                </div>
+                                                    </select>
+                                                    <div class="form-text">Select multiple tags to categorize this project</div>
+                                                <?php endif; ?>
                                                 <div class="mt-2">
                                                     <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addTagModal">
                                                         <i class="bx bx-plus me-1"></i> Add New Tag
                                                     </button>
+                                                    <small class="text-muted ms-2">Available tags: <?php echo count($tags); ?></small>
                                                 </div>
-                                                <small class="text-muted">Available tags: <?php echo count($tags); ?></small>
                                             </div>
                                         </div>
                                     </div>
@@ -426,8 +411,8 @@ $tags = $project->getTags();
                                             </div>
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label">End Date</label>
-                                                <input type="date" class="form-control" name="end_date" id="end_date" readonly>
-                                                <div class="form-text">Auto-generated based on start date</div>
+                                                <input type="date" class="form-control" name="end_date" id="end_date">
+                                                <div class="form-text">Auto-generated based on start date (4 months later)</div>
                                             </div>
                                             <div class="col-md-4 mb-3">
                                                 <label class="form-label">Assigned Date</label>
@@ -469,7 +454,7 @@ $tags = $project->getTags();
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between">
-                                            <a href="/research_apps/projects/list.php" class="btn btn-secondary">
+                                            <a href="/projects/list.php" class="btn btn-secondary">
                                                 <i class="bx bx-x me-1"></i> Cancel
                                             </a>
                                             <button type="submit" name="create_project" class="btn btn-primary">
@@ -582,6 +567,9 @@ $tags = $project->getTags();
     <script src="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="../Apps/assets/vendor/js/menu.js"></script>
 
+    <!-- Tom Select JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <!-- Main JS -->
     <script src="../Apps/assets/js/main.js"></script>
 
@@ -601,12 +589,81 @@ $tags = $project->getTags();
             }
         }
 
-        // Set today's date as default for assigned date
+        // Initialize Tom Select for multi-select fields
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
             const assignedDateField = document.querySelector('input[name="assigned_date"]');
             if (assignedDateField && !assignedDateField.value) {
                 assignedDateField.value = today;
+            }
+
+            // Initialize Tom Select for Additional Mentors
+            if (document.getElementById('additional-mentors-select')) {
+                new TomSelect("#additional-mentors-select", {
+                    plugins: {
+                        remove_button: {
+                            title: "Remove this mentor",
+                        }
+                    },
+                    allowEmptyOption: false,
+                    placeholder: "Select additional mentors...",
+                    dropdownDirection: "auto",
+                    maxItems: null,
+                    onInitialize() {
+                        this.control_input.addEventListener("focus", () =>
+                            this.wrapper.classList.add("is-focused")
+                        );
+                        this.control_input.addEventListener("blur", () =>
+                            this.wrapper.classList.remove("is-focused")
+                        );
+                    }
+                });
+            }
+
+            // Initialize Tom Select for Assigned Students
+            if (document.getElementById('assigned-students-select')) {
+                new TomSelect("#assigned-students-select", {
+                    plugins: {
+                        remove_button: {
+                            title: "Remove this student",
+                        }
+                    },
+                    allowEmptyOption: false,
+                    placeholder: "Select students...",
+                    dropdownDirection: "auto",
+                    maxItems: null,
+                    onInitialize() {
+                        this.control_input.addEventListener("focus", () =>
+                            this.wrapper.classList.add("is-focused")
+                        );
+                        this.control_input.addEventListener("blur", () =>
+                            this.wrapper.classList.remove("is-focused")
+                        );
+                    }
+                });
+            }
+
+            // Initialize Tom Select for Project Tags
+            if (document.getElementById('project-tags-select')) {
+                new TomSelect("#project-tags-select", {
+                    plugins: {
+                        remove_button: {
+                            title: "Remove this tag",
+                        }
+                    },
+                    allowEmptyOption: false,
+                    placeholder: "Select project tags...",
+                    dropdownDirection: "auto",
+                    maxItems: null,
+                    onInitialize() {
+                        this.control_input.addEventListener("focus", () =>
+                            this.wrapper.classList.add("is-focused")
+                        );
+                        this.control_input.addEventListener("blur", () =>
+                            this.wrapper.classList.remove("is-focused")
+                        );
+                    }
+                });
             }
         });
     </script>

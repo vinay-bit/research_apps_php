@@ -8,7 +8,7 @@ require_once '../classes/Student.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /research_apps/login.php");
+    header("Location: /login.php");
     exit();
 }
 
@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'subject_id' => !empty($_POST['subject_id']) ? $_POST['subject_id'] : null,
             'has_prototype' => $_POST['has_prototype'] ?? 'No',
             'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
+            'end_date' => !empty($_POST['end_date']) ? $_POST['end_date'] : null,
             'assigned_date' => !empty($_POST['assigned_date']) ? $_POST['assigned_date'] : null,
             'completion_date' => !empty($_POST['completion_date']) ? $_POST['completion_date'] : null,
             'drive_link' => $_POST['drive_link'] ?? '',
@@ -146,6 +147,9 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
 
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+
+    <!-- Tom Select Bootstrap 5 theme CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
 
     <!-- Helpers -->
     <script src="../Apps/assets/vendor/js/helpers.js"></script>
@@ -318,9 +322,10 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
                                                     <div class="form-text">End date will be automatically calculated (4 months from start date)</div>
                                                 </div>
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label" for="end_date_display">End Date (Auto-calculated)</label>
-                                                    <input type="text" class="form-control" id="end_date_display" 
-                                                           value="<?php echo $project_data['end_date'] ? date('Y-m-d', strtotime($project_data['end_date'])) : ''; ?>" readonly>
+                                                    <label class="form-label" for="end_date">End Date</label>
+                                                    <input type="date" class="form-control" id="end_date" name="end_date"
+                                                           value="<?php echo $project_data['end_date'] ? date('Y-m-d', strtotime($project_data['end_date'])) : ''; ?>">
+                                                    <div class="form-text">Auto-calculated based on start date (4 months later)</div>
                                                 </div>
                                                 <div class="col-md-6 mb-3">
                                                     <label class="form-label" for="assigned_date">Assigned Date</label>
@@ -359,29 +364,13 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
-                                                <input type="text" class="form-control mb-2" id="student_search" placeholder="Search students...">
-                                                <div style="max-height: 300px; overflow-y: auto;" id="students_list">
+                                                <select id="assigned-students-select" class="form-select" multiple placeholder="Select students..." name="assigned_students[]">
                                                     <?php foreach ($students as $student): ?>
-                                                        <div class="form-check mb-2">
-                                                            <input class="form-check-input" type="checkbox" name="assigned_students[]" 
-                                                                   value="<?php echo $student['id']; ?>" id="student_<?php echo $student['id']; ?>"
-                                                                   <?php echo in_array($student['id'], $assigned_student_ids) ? 'checked' : ''; ?>>
-                                                            <label class="form-check-label" for="student_<?php echo $student['id']; ?>">
-                                                                <div class="d-flex align-items-center">
-                                                                    <div class="avatar avatar-sm me-2">
-                                                                        <div class="avatar-initial bg-label-primary rounded-circle">
-                                                                            <?php echo strtoupper(substr($student['full_name'], 0, 2)); ?>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div class="fw-semibold"><?php echo htmlspecialchars($student['full_name']); ?></div>
-                                                                        <small class="text-muted"><?php echo htmlspecialchars($student['student_id']); ?> - <?php echo htmlspecialchars($student['grade']); ?></small>
-                                                                    </div>
-                                                                </div>
-                                                            </label>
-                                                        </div>
+                                                        <option value="<?php echo $student['id']; ?>" <?php echo in_array($student['id'], $assigned_student_ids) ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($student['full_name']); ?> (<?php echo htmlspecialchars($student['student_id']); ?> - <?php echo htmlspecialchars($student['grade']); ?>)
+                                                        </option>
                                                     <?php endforeach; ?>
-                                                </div>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -393,30 +382,16 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
-                                                <div style="max-height: 200px; overflow-y: auto;">
+                                                <select id="additional-mentors-select" class="form-select" multiple placeholder="Select additional mentors..." name="assigned_mentors[]">
                                                     <?php foreach ($mentors as $mentor): ?>
-                                                        <div class="form-check mb-2">
-                                                            <input class="form-check-input" type="checkbox" name="assigned_mentors[]" 
-                                                                   value="<?php echo $mentor['id']; ?>" id="mentor_<?php echo $mentor['id']; ?>"
-                                                                   <?php echo in_array($mentor['id'], $assigned_mentor_ids) ? 'checked' : ''; ?>>
-                                                            <label class="form-check-label" for="mentor_<?php echo $mentor['id']; ?>">
-                                                                <div class="d-flex align-items-center">
-                                                                    <div class="avatar avatar-sm me-2">
-                                                                        <div class="avatar-initial bg-label-info rounded-circle">
-                                                                            <?php echo strtoupper(substr($mentor['full_name'], 0, 2)); ?>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div>
-                                                                        <div class="fw-semibold"><?php echo htmlspecialchars($mentor['full_name']); ?></div>
+                                                        <option value="<?php echo $mentor['id']; ?>" <?php echo in_array($mentor['id'], $assigned_mentor_ids) ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($mentor['full_name']); ?>
                                                                         <?php if ($mentor['specialization']): ?>
-                                                                            <small class="text-muted"><?php echo htmlspecialchars($mentor['specialization']); ?></small>
+                                                                - <?php echo htmlspecialchars($mentor['specialization']); ?>
                                                                         <?php endif; ?>
-                                                                    </div>
-                                                                </div>
-                                                            </label>
-                                                        </div>
+                                                        </option>
                                                     <?php endforeach; ?>
-                                                </div>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -431,20 +406,13 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
                                         </div>
                                         <div class="card-body">
                                             <div class="mb-3">
-                                                <div style="max-height: 200px; overflow-y: auto;">
+                                                <select id="project-tags-select" class="form-select" multiple placeholder="Select project tags..." name="assigned_tags[]">
                                                     <?php foreach ($tags as $tag): ?>
-                                                        <div class="form-check mb-2">
-                                                            <input class="form-check-input" type="checkbox" name="assigned_tags[]" 
-                                                                   value="<?php echo $tag['id']; ?>" id="tag_<?php echo $tag['id']; ?>"
-                                                                   <?php echo in_array($tag['id'], $assigned_tag_ids) ? 'checked' : ''; ?>>
-                                                            <label class="form-check-label" for="tag_<?php echo $tag['id']; ?>">
-                                                                <span class="badge tag-badge tag-<?php echo htmlspecialchars($tag['color']); ?> me-1">
+                                                        <option value="<?php echo $tag['id']; ?>" <?php echo in_array($tag['id'], $assigned_tag_ids) ? 'selected' : ''; ?>>
                                                                     <?php echo htmlspecialchars($tag['tag_name']); ?>
-                                                                </span>
-                                                            </label>
-                                                        </div>
+                                                        </option>
                                                     <?php endforeach; ?>
-                                                </div>
+                                                </select>
                                                 <small class="text-muted">Available tags: <?php echo count($tags); ?></small>
                                             </div>
                                         </div>
@@ -527,6 +495,9 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
     <script src="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="../Apps/assets/vendor/js/menu.js"></script>
 
+    <!-- Tom Select JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <!-- Main JS -->
     <script src="../Apps/assets/js/main.js"></script>
 
@@ -537,25 +508,83 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
             if (startDate) {
                 const start = new Date(startDate);
                 const end = new Date(start.getFullYear(), start.getMonth() + 4, start.getDate());
-                document.getElementById('end_date_display').value = end.toISOString().split('T')[0];
+                document.getElementById('end_date').value = end.toISOString().split('T')[0];
             }
         }
 
-        // Student search functionality
-        document.getElementById('student_search').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const studentsList = document.getElementById('students_list');
-            const students = studentsList.querySelectorAll('.form-check');
+        // Initialize Tom Select for multi-select fields
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Tom Select for Assigned Students
+            if (document.getElementById('assigned-students-select')) {
+                new TomSelect("#assigned-students-select", {
+                    plugins: {
+                        remove_button: {
+                            title: "Remove this student",
+                        }
+                    },
+                    allowEmptyOption: false,
+                    placeholder: "Select students...",
+                    dropdownDirection: "auto",
+                    maxItems: null,
+                    onInitialize() {
+                        this.control_input.addEventListener("focus", () =>
+                            this.wrapper.classList.add("is-focused")
+                        );
+                        this.control_input.addEventListener("blur", () =>
+                            this.wrapper.classList.remove("is-focused")
+                        );
+                    }
+                });
+            }
+
+            // Initialize Tom Select for Additional Mentors
+            if (document.getElementById('additional-mentors-select')) {
+                new TomSelect("#additional-mentors-select", {
+                    plugins: {
+                        remove_button: {
+                            title: "Remove this mentor",
+                        }
+                    },
+                    allowEmptyOption: false,
+                    placeholder: "Select additional mentors...",
+                    dropdownDirection: "auto",
+                    maxItems: null,
+                    onInitialize() {
+                        this.control_input.addEventListener("focus", () =>
+                            this.wrapper.classList.add("is-focused")
+                        );
+                        this.control_input.addEventListener("blur", () =>
+                            this.wrapper.classList.remove("is-focused")
+                        );
+                    }
+                });
+            }
+
+            // Initialize Tom Select for Project Tags
+            if (document.getElementById('project-tags-select')) {
+                new TomSelect("#project-tags-select", {
+                    plugins: {
+                        remove_button: {
+                            title: "Remove this tag",
+                        }
+                    },
+                    allowEmptyOption: false,
+                    placeholder: "Select project tags...",
+                    dropdownDirection: "auto",
+                    maxItems: null,
+                    onInitialize() {
+                        this.control_input.addEventListener("focus", () =>
+                            this.wrapper.classList.add("is-focused")
+                        );
+                        this.control_input.addEventListener("blur", () =>
+                            this.wrapper.classList.remove("is-focused")
+                        );
+                    }
+                });
+            }
             
-            students.forEach(function(student) {
-                const label = student.querySelector('.form-check-label');
-                const text = label.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    student.style.display = 'block';
-                } else {
-                    student.style.display = 'none';
-                }
-            });
+            // Calculate end date after Tom Select initialization
+            calculateEndDate();
         });
 
         // Tag color preview
@@ -603,10 +632,7 @@ $assigned_tag_ids = array_column($assigned_tags, 'id');
             alert('Tag will be added when you save the project');
         }
 
-        // Initialize end date calculation on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            calculateEndDate();
-        });
+
     </script>
 </body>
 

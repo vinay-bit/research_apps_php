@@ -39,6 +39,7 @@ class Project {
                       subject_id = :subject_id,
                       has_prototype = :has_prototype,
                       start_date = :start_date,
+                      end_date = :end_date,
                       assigned_date = :assigned_date,
                       completion_date = :completion_date,
                       drive_link = :drive_link,
@@ -61,6 +62,7 @@ class Project {
         $stmt->bindParam(':subject_id', $this->subject_id);
         $stmt->bindParam(':has_prototype', $this->has_prototype);
         $stmt->bindParam(':start_date', $this->start_date);
+        $stmt->bindParam(':end_date', $this->end_date);
         $stmt->bindParam(':assigned_date', $this->assigned_date);
         $stmt->bindParam(':completion_date', $this->completion_date);
         $stmt->bindParam(':drive_link', $this->drive_link);
@@ -77,7 +79,7 @@ class Project {
     
     // Get all projects with related data
     public function getAll($filters = []) {
-        $query = "SELECT p.*, 
+        $query = "SELECT DISTINCT p.*, 
                          ps.status_name,
                          s.subject_name,
                          mentor.full_name as mentor_name,
@@ -87,8 +89,14 @@ class Project {
                   LEFT JOIN project_statuses ps ON p.status_id = ps.id
                   LEFT JOIN subjects s ON p.subject_id = s.id
                   LEFT JOIN users mentor ON p.lead_mentor_id = mentor.id
-                  LEFT JOIN users rbm ON p.rbm_id = rbm.id
-                  WHERE 1 = 1";
+                  LEFT JOIN users rbm ON p.rbm_id = rbm.id";
+        
+        // Add tag join if filtering by tag
+        if (!empty($filters['tag_id'])) {
+            $query .= " INNER JOIN project_tag_assignments pta ON p.id = pta.project_id";
+        }
+        
+        $query .= " WHERE 1 = 1";
         
         // Apply filters
         $params = [];
@@ -107,6 +115,10 @@ class Project {
         if (!empty($filters['subject_id'])) {
             $query .= " AND p.subject_id = :subject_id";
             $params[':subject_id'] = $filters['subject_id'];
+        }
+        if (!empty($filters['tag_id'])) {
+            $query .= " AND pta.tag_id = :tag_id";
+            $params[':tag_id'] = $filters['tag_id'];
         }
         if (!empty($filters['search'])) {
             $query .= " AND (p.project_name LIKE :search OR p.project_id LIKE :search)";
@@ -155,6 +167,7 @@ class Project {
                       subject_id = :subject_id,
                       has_prototype = :has_prototype,
                       start_date = :start_date,
+                      end_date = :end_date,
                       assigned_date = :assigned_date,
                       completion_date = :completion_date,
                       drive_link = :drive_link,
@@ -180,6 +193,7 @@ class Project {
         $stmt->bindParam(':subject_id', $this->subject_id);
         $stmt->bindParam(':has_prototype', $this->has_prototype);
         $stmt->bindParam(':start_date', $this->start_date);
+        $stmt->bindParam(':end_date', $this->end_date);
         $stmt->bindParam(':assigned_date', $this->assigned_date);
         $stmt->bindParam(':completion_date', $this->completion_date);
         $stmt->bindParam(':drive_link', $this->drive_link);
@@ -468,20 +482,27 @@ class Project {
     
     // Update project method that accepts project_id and data array
     public function updateProject($project_id, $data) {
-        // Set the properties from the data array
+        // Get current project data first
+        $current_project = $this->getById($project_id);
+        if (!$current_project) {
+            return false;
+        }
+        
+        // Set the properties from the data array, using current values as defaults
         $this->id = $project_id;
-        $this->project_name = $data['project_name'];
-        $this->description = $data['description'];
-        $this->status_id = $data['status_id'];
-        $this->lead_mentor_id = $data['lead_mentor_id'];
-        $this->subject_id = $data['subject_id'];
-        $this->has_prototype = $data['has_prototype'];
-        $this->start_date = $data['start_date'];
-        $this->assigned_date = $data['assigned_date'];
-        $this->completion_date = $data['completion_date'];
-        $this->drive_link = $data['drive_link'];
-        $this->rbm_id = $data['rbm_id'];
-        $this->notes = $data['notes'];
+        $this->project_name = $data['project_name'] ?? $current_project['project_name'];
+        $this->description = $data['description'] ?? $current_project['description'];
+        $this->status_id = $data['status_id'] ?? $current_project['status_id'];
+        $this->lead_mentor_id = $data['lead_mentor_id'] ?? $current_project['lead_mentor_id'];
+        $this->subject_id = $data['subject_id'] ?? $current_project['subject_id'];
+        $this->has_prototype = $data['has_prototype'] ?? $current_project['has_prototype'];
+        $this->start_date = $data['start_date'] ?? $current_project['start_date'];
+        $this->end_date = $data['end_date'] ?? $current_project['end_date'];
+        $this->assigned_date = $data['assigned_date'] ?? $current_project['assigned_date'];
+        $this->completion_date = $data['completion_date'] ?? $current_project['completion_date'];
+        $this->drive_link = $data['drive_link'] ?? $current_project['drive_link'];
+        $this->rbm_id = $data['rbm_id'] ?? $current_project['rbm_id'];
+        $this->notes = $data['notes'] ?? $current_project['notes'];
         
         // Call the existing update method
         return $this->update();
