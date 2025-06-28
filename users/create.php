@@ -143,6 +143,9 @@ if ($_POST) {
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
 
+    <!-- Tom Select Bootstrap 5 theme CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+
     <!-- Helpers -->
     <script src="../Apps/assets/vendor/js/helpers.js"></script>
     <script src="../Apps/assets/js/config.js"></script>
@@ -252,19 +255,68 @@ if ($_POST) {
                                             <div id="mentor_fields" style="display: none;">
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
-                                                        <label for="specialization" class="form-label">Specialization</label>
-                                                        <input type="text" class="form-control" id="specialization" name="specialization" value="<?php echo isset($_POST['specialization']) ? htmlspecialchars($_POST['specialization']) : ''; ?>" placeholder="e.g., Machine Learning, Web Development">
+                                                        <label for="specialization" class="form-label">Specializations</label>
+                                                        <select id="specialization-select" class="form-select" multiple placeholder="Select specializations..." name="specializations[]">
+                                                            <option value="Machine Learning">Machine Learning</option>
+                                                            <option value="Artificial Intelligence">Artificial Intelligence</option>
+                                                            <option value="Data Science">Data Science</option>
+                                                            <option value="Web Development">Web Development</option>
+                                                            <option value="Mobile App Development">Mobile App Development</option>
+                                                            <option value="Software Engineering">Software Engineering</option>
+                                                            <option value="Database Management">Database Management</option>
+                                                            <option value="Cloud Computing">Cloud Computing</option>
+                                                            <option value="Cybersecurity">Cybersecurity</option>
+                                                            <option value="DevOps">DevOps</option>
+                                                            <option value="UI/UX Design">UI/UX Design</option>
+                                                            <option value="Computer Vision">Computer Vision</option>
+                                                            <option value="Natural Language Processing">Natural Language Processing</option>
+                                                            <option value="Robotics">Robotics</option>
+                                                            <option value="IoT">Internet of Things (IoT)</option>
+                                                            <option value="Blockchain">Blockchain Technology</option>
+                                                            <option value="Game Development">Game Development</option>
+                                                            <option value="Virtual Reality">Virtual Reality</option>
+                                                            <option value="Augmented Reality">Augmented Reality</option>
+                                                            <option value="Quantum Computing">Quantum Computing</option>
+                                                            <option value="Bioinformatics">Bioinformatics</option>
+                                                            <option value="Health Informatics">Health Informatics</option>
+                                                            <option value="Environmental Technology">Environmental Technology</option>
+                                                            <option value="Renewable Energy">Renewable Energy</option>
+                                                            <option value="Electronics">Electronics</option>
+                                                            <option value="Signal Processing">Signal Processing</option>
+                                                            <option value="Network Security">Network Security</option>
+                                                            <option value="Digital Marketing">Digital Marketing</option>
+                                                            <option value="Project Management">Project Management</option>
+                                                            <option value="Research Methodology">Research Methodology</option>
+                                                            <option value="Academic Writing">Academic Writing</option>
+                                                            <option value="Statistical Analysis">Statistical Analysis</option>
+                                                            <option value="Mathematics">Mathematics</option>
+                                                            <option value="Physics">Physics</option>
+                                                            <option value="Chemistry">Chemistry</option>
+                                                            <option value="Biology">Biology</option>
+                                                            <option value="Biomedical Engineering">Biomedical Engineering</option>
+                                                            <option value="Mechanical Engineering">Mechanical Engineering</option>
+                                                            <option value="Electrical Engineering">Electrical Engineering</option>
+                                                            <option value="Civil Engineering">Civil Engineering</option>
+                                                            <option value="Environmental Science">Environmental Science</option>
+                                                            <option value="Materials Science">Materials Science</option>
+                                                            <option value="Nanotechnology">Nanotechnology</option>
+                                                            <option value="Space Technology">Space Technology</option>
+                                                            <option value="Education Technology">Education Technology</option>
+                                                            <option value="Social Innovation">Social Innovation</option>
+                                                            <option value="Digital Healthcare">Digital Healthcare</option>
+                                                            <option value="Business Analysis">Business Analysis</option>
+                                                            <option value="Finance">Finance</option>
+                                                            <option value="Healthcare Management">Healthcare Management</option>
+                                                            <option value="Education">Education</option>
+                                                        </select>
+                                                        <div class="form-text">Select your areas of expertise and specialization</div>
                                                     </div>
                                                     <div class="col-md-6 mb-3">
-                                                        <label for="organization_id" class="form-label">Organization</label>
-                                                        <select class="form-select" id="organization_id" name="organization_id">
-                                                            <option value="">Select Organization</option>
-                                                            <?php foreach ($organizations as $org): ?>
-                                                                <option value="<?php echo $org['id']; ?>" <?php echo (isset($_POST['organization_id']) && $_POST['organization_id'] == $org['id']) ? 'selected' : ''; ?>>
-                                                                    <?php echo htmlspecialchars($org['name']); ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
-                                                        </select>
+                                                        <label for="organization_name" class="form-label">Organization</label>
+                                                        <input type="text" class="form-control" id="organization_name" name="organization_name" 
+                                                               value="<?php echo isset($_POST['organization_name']) ? htmlspecialchars($_POST['organization_name']) : ''; ?>" 
+                                                               placeholder="Enter organization name">
+                                                        <div class="form-text">Enter the name of your organization or institution</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -352,7 +404,7 @@ if ($_POST) {
 
                                             <div class="mt-4">
                                                 <button type="submit" class="btn btn-primary me-2">Create User</button>
-                                                <a href="/research_apps/users/list.php" class="btn btn-outline-secondary">Cancel</a>
+                                                <a href="/users/list.php" class="btn btn-outline-secondary">Cancel</a>
                                             </div>
                                         </form>
                                     </div>
@@ -384,9 +436,15 @@ if ($_POST) {
     <script src="../Apps/assets/vendor/js/bootstrap.js"></script>
     <script src="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="../Apps/assets/vendor/js/menu.js"></script>
+
+    <!-- Tom Select JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
     <script src="../Apps/assets/js/main.js"></script>
 
     <script>
+        let specializationTomSelect = null;
+
         function toggleUserTypeFields() {
             const userType = document.getElementById('user_type').value;
             const adminMentorFields = document.getElementById('admin_mentor_fields');
@@ -405,6 +463,31 @@ if ($_POST) {
                 adminMentorFields.style.display = 'block';
                 if (userType === 'mentor') {
                     mentorFields.style.display = 'block';
+                    
+                    // Initialize Tom Select for specializations when mentor fields are shown
+                    if (!specializationTomSelect && document.getElementById('specialization-select')) {
+                        setTimeout(() => {
+                            specializationTomSelect = new TomSelect("#specialization-select", {
+                                plugins: {
+                                    remove_button: {
+                                        title: "Remove this specialization",
+                                    }
+                                },
+                                allowEmptyOption: false,
+                                placeholder: "Select specializations...",
+                                dropdownDirection: "auto",
+                                maxItems: null,
+                                onInitialize() {
+                                    this.control_input.addEventListener("focus", () =>
+                                        this.wrapper.classList.add("is-focused")
+                                    );
+                                    this.control_input.addEventListener("blur", () =>
+                                        this.wrapper.classList.remove("is-focused")
+                                    );
+                                }
+                            });
+                        }, 100);
+                    }
                 }
             } else if (userType === 'councillor') {
                 councillorFields.style.display = 'block';

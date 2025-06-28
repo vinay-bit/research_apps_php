@@ -302,5 +302,35 @@ class Student {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    // Get students by application year
+    public function getByApplicationYear($application_year) {
+        $query = "SELECT s.*, 
+                         rbm.full_name as rbm_name, rbm.branch as rbm_branch,
+                         c.full_name as counselor_name, c.user_type as counselor_type,
+                         b.name as board_name
+                FROM " . $this->table_name . " s
+                LEFT JOIN users rbm ON s.rbm_id = rbm.id
+                LEFT JOIN users c ON s.counselor_id = c.id
+                LEFT JOIN boards b ON s.board_id = b.id
+                WHERE s.application_year = :application_year
+                ORDER BY s.created_at DESC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':application_year', $application_year);
+        $stmt->execute();
+        return $stmt;
+    }
+    
+    // Get distinct application years
+    public function getApplicationYears() {
+        $query = "SELECT DISTINCT application_year 
+                FROM " . $this->table_name . " 
+                WHERE application_year IS NOT NULL 
+                ORDER BY application_year DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt;
+    }
 }
 ?>

@@ -4,9 +4,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
-        <a href="/research_apps/dashboard.php" class="app-brand-link">
+        <a href="/dashboard.php" class="app-brand-link">
             <span class="app-brand-logo demo">
-                <img src="/research_apps/logo/omotec_logo.webp" alt="OMOTEC" height="30" style="max-width: 100px;">
+                <img src="/logo/omotec_logo.webp" alt="OMOTEC" height="30" style="max-width: 100px;">
             </span>
         </a>
 
@@ -20,7 +20,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <ul class="menu-inner py-1">
         <!-- Dashboard -->
         <li class="menu-item <?php echo ($current_page == 'dashboard.php') ? 'active' : ''; ?>">
-            <a href="/research_apps/dashboard.php" class="menu-link">
+            <a href="/dashboard.php" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div data-i18n="Analytics">Dashboard</div>
             </a>
@@ -38,13 +38,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?php echo ($current_page == 'list.php' && strpos($_SERVER['REQUEST_URI'], 'users') !== false) ? 'active' : ''; ?>">
-                    <a href="/research_apps/users/list.php" class="menu-link">
+                    <a href="/users/list.php" class="menu-link">
                         <div data-i18n="All Users">All Users</div>
                     </a>
                 </li>
                 <?php if (hasPermission('admin')): ?>
                 <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'users') !== false) ? 'active' : ''; ?>">
-                    <a href="/research_apps/users/create.php" class="menu-link">
+                    <a href="/users/create.php" class="menu-link">
                         <div data-i18n="Add User">Add User</div>
                     </a>
                 </li>
@@ -55,7 +55,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <!-- Admins -->
         <?php if (hasPermission('admin')): ?>
         <li class="menu-item">
-            <a href="/research_apps/users/list.php?type=admin" class="menu-link">
+            <a href="/users/list.php?type=admin" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-shield"></i>
                 <div data-i18n="Admins">Admins</div>
             </a>
@@ -64,7 +64,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Mentors -->
         <li class="menu-item">
-            <a href="/research_apps/users/list.php?type=mentor" class="menu-link">
+            <a href="/users/list.php?type=mentor" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-group"></i>
                 <div data-i18n="Mentors">Mentors</div>
             </a>
@@ -72,7 +72,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- Councillors -->
         <li class="menu-item">
-            <a href="/research_apps/users/list.php?type=councillor" class="menu-link">
+            <a href="/users/list.php?type=councillor" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-support"></i>
                 <div data-i18n="Councillors">Councillors</div>
             </a>
@@ -80,7 +80,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
         <!-- RBMs -->
         <li class="menu-item">
-            <a href="/research_apps/users/list.php?type=rbm" class="menu-link">
+            <a href="/users/list.php?type=rbm" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-briefcase"></i>
                 <div data-i18n="RBMs">RBMs</div>
             </a>
@@ -98,12 +98,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?php echo ($current_page == 'list.php' && strpos($_SERVER['REQUEST_URI'], 'students') !== false) ? 'active' : ''; ?>">
-                    <a href="/research_apps/students/list.php" class="menu-link">
+                    <a href="/students/list.php" class="menu-link">
                         <div data-i18n="All Students">All Students</div>
                     </a>
                 </li>
                 <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'students') !== false) ? 'active' : ''; ?>">
-                    <a href="/research_apps/students/create.php" class="menu-link">
+                    <a href="/students/create.php" class="menu-link">
                         <div data-i18n="Add Student">Add Student</div>
                     </a>
                 </li>
@@ -122,25 +122,39 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
             <ul class="menu-sub">
                 <li class="menu-item <?php echo ($current_page == 'list.php' && strpos($_SERVER['REQUEST_URI'], 'projects') !== false) ? 'active' : ''; ?>">
-                    <a href="/research_apps/projects/list.php" class="menu-link">
+                    <a href="/projects/list.php" class="menu-link">
                         <div data-i18n="All Projects">All Projects</div>
                     </a>
                 </li>
                 <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'projects') !== false) ? 'active' : ''; ?>">
-                    <a href="/research_apps/projects/create.php" class="menu-link">
+                    <a href="/projects/create.php" class="menu-link">
                         <div data-i18n="Create Project">Create Project</div>
                     </a>
                 </li>
             </ul>
         </li>
         
-        <li class="menu-item">
-            <a href="#" class="menu-link">
-                <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
-                <div data-i18n="Progress">Progress</div>
-                <div class="badge bg-danger rounded-pill ms-auto">Soon</div>
+        <!-- Publications -->
+        <li class="menu-item <?php echo (strpos($current_page, 'publication') !== false) ? 'active open' : ''; ?>">
+            <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-book"></i>
+                <div data-i18n="Publications">Publications</div>
             </a>
+            <ul class="menu-sub">
+                <li class="menu-item <?php echo ($current_page == 'list.php' && strpos($_SERVER['REQUEST_URI'], 'publications') !== false) ? 'active' : ''; ?>">
+                    <a href="/publications/list.php" class="menu-link">
+                        <div data-i18n="All Publications">All Publications</div>
+                    </a>
+                </li>
+                <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'publications') !== false) ? 'active' : ''; ?>">
+                    <a href="/publications/create.php" class="menu-link">
+                        <div data-i18n="Create Publication">Create Publication</div>
+            </a>
+                </li>
+            </ul>
         </li>
+        
+
 
         <!-- Reports -->
         <li class="menu-header small text-uppercase">
@@ -161,7 +175,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </li>
         
         <li class="menu-item">
-            <a href="/research_apps/dashboard.php" class="menu-link">
+            <a href="/dashboard.php" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-cog"></i>
                 <div data-i18n="Profile">My Profile</div>
             </a>

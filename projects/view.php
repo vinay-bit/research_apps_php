@@ -5,7 +5,7 @@ require_once '../classes/Project.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /research_apps/login.php");
+    header("Location: /login.php");
     exit();
 }
 
@@ -79,6 +79,41 @@ $assigned_tags = $project->getAssignedTags($project_id);
         .tag-danger { background-color: #ffebee; border-color: #f44336; color: #d32f2f !important; }
         .tag-secondary { background-color: #f5f5f5; border-color: #9e9e9e; color: #424242 !important; }
         .tag-dark { background-color: #f5f5f5; border-color: #424242; color: #212121 !important; }
+        
+        /* Deadline status styling */
+        .project-overdue {
+            border-left: 4px solid #f44336 !important;
+        }
+        .project-overdue .card-header {
+            background-color: #ffebee !important;
+        }
+        .project-due-soon {
+            border-left: 4px solid #ff9800 !important;
+        }
+        .project-due-soon .card-header {
+            background-color: #fff8e1 !important;
+        }
+        .deadline-badge-overdue {
+            animation: pulse-red 2s infinite;
+        }
+        .deadline-badge-urgent {
+            animation: pulse-red 1.5s infinite;
+        }
+        .deadline-badge-warning {
+            animation: pulse-orange 3s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(244, 67, 54, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+        }
+        
+        @keyframes pulse-orange {
+            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 152, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
     </style>
 </head>
 
@@ -101,14 +136,35 @@ $assigned_tags = $project->getAssignedTags($project_id);
                     <!-- Content -->
                     <div class="container-xxl flex-grow-1 container-p-y">
                         <!-- Header -->
+                        <?php 
+                        // Calculate deadline status for styling
+                        $deadline_status = '';
+                        $deadline_class = '';
+                        if ($project_data['end_date']) {
+                            $end_date = strtotime($project_data['end_date']);
+                            $today = time();
+                            $days_remaining = ceil(($end_date - $today) / (60 * 60 * 24));
+                            
+                            if ($days_remaining < 0) {
+                                $deadline_class = 'project-overdue';
+                                $deadline_status = 'OVERDUE';
+                            } elseif ($days_remaining <= 30) {
+                                $deadline_class = 'project-due-soon';
+                                $deadline_status = 'DUE SOON';
+                            }
+                        }
+                        ?>
                         <div class="row">
                             <div class="col-12">
-                                <div class="card mb-4">
+                                <div class="card mb-4 <?php echo $deadline_class; ?>">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <div>
                                             <h5 class="mb-0">
                                                 <span class="text-muted fw-light">Project Management /</span> 
                                                 <?php echo htmlspecialchars($project_data['project_name']); ?>
+                                                <?php if ($deadline_status): ?>
+                                                    <span class="badge bg-<?php echo ($deadline_status == 'OVERDUE') ? 'danger' : 'warning'; ?> ms-2"><?php echo $deadline_status; ?></span>
+                                                <?php endif; ?>
                                             </h5>
                                             <small class="text-muted"><?php echo htmlspecialchars($project_data['project_id']); ?></small>
                                         </div>
@@ -129,9 +185,13 @@ $assigned_tags = $project->getAssignedTags($project_id);
                             <!-- Project Overview -->
                             <div class="col-xl-8 col-lg-7 col-md-7">
                                 <!-- Basic Information -->
-                                <div class="card mb-4">
+                                <div class="card mb-4 <?php echo $deadline_class; ?>">
                                     <div class="card-header">
-                                        <h6 class="mb-0">Project Overview</h6>
+                                        <h6 class="mb-0">Project Overview
+                                            <?php if ($deadline_status): ?>
+                                                <span class="badge bg-<?php echo ($deadline_status == 'OVERDUE') ? 'danger' : 'warning'; ?> ms-2 float-end"><?php echo $deadline_status; ?></span>
+                                            <?php endif; ?>
+                                        </h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row mb-3">
@@ -236,11 +296,11 @@ $assigned_tags = $project->getAssignedTags($project_id);
                                                     ?>
                                                     <p class="mb-1"><?php echo date('F d, Y', $end_date); ?></p>
                                                     <?php if ($days_remaining < 0): ?>
-                                                        <span class="badge bg-danger">Overdue by <?php echo abs($days_remaining); ?> days</span>
+                                                        <span class="badge bg-danger deadline-badge-overdue">Overdue by <?php echo abs($days_remaining); ?> days</span>
                                                     <?php elseif ($days_remaining <= 7): ?>
-                                                        <span class="badge bg-warning">Due in <?php echo $days_remaining; ?> days</span>
+                                                        <span class="badge bg-danger deadline-badge-urgent">Due in <?php echo $days_remaining; ?> days - URGENT</span>
                                                     <?php elseif ($days_remaining <= 30): ?>
-                                                        <span class="badge bg-info"><?php echo $days_remaining; ?> days remaining</span>
+                                                        <span class="badge bg-warning deadline-badge-warning"><?php echo $days_remaining; ?> days remaining</span>
                                                     <?php else: ?>
                                                         <span class="badge bg-success"><?php echo $days_remaining; ?> days remaining</span>
                                                     <?php endif; ?>

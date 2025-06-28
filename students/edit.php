@@ -10,6 +10,12 @@ if (!isLoggedIn()) {
     exit();
 }
 
+// Check if student ID is provided
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header('Location: /students/list.php');
+    exit();
+}
+
 // Get database connection
 $database = new Database();
 $db = $database->getConnection();
@@ -17,6 +23,13 @@ $db = $database->getConnection();
 // Initialize classes
 $student = new Student($db);
 $user = new User($db);
+
+// Get student data
+$student->id = intval($_GET['id']);
+if (!$student->readOne()) {
+    header('Location: /students/list.php');
+    exit();
+}
 
 // Get RBM users for dropdown
 $rbm_stmt = $user->getRBMUsers();
@@ -41,63 +54,66 @@ while ($row = $board_stmt->fetch(PDO::FETCH_ASSOC)) {
 
 // Handle form submission
 if ($_POST) {
-    // Validate required fields
-    $errors = [];
-    
-    if (empty(trim($_POST['full_name']))) {
-        $errors[] = "Student full name is required.";
-    }
-    
-    // Handle custom board
-    $board_id = null;
-    if (!empty($_POST['board_id'])) {
-        if ($_POST['board_id'] === 'other' && !empty($_POST['custom_board'])) {
-            // Add new board
-            $new_board_id = $student->addBoard(trim($_POST['custom_board']));
-            if ($new_board_id) {
-                $board_id = $new_board_id;
-            }
-        } else {
-            $board_id = intval($_POST['board_id']);
-        }
-    }
-    
-    // Set student properties
-    if (empty($errors)) {
-        $student->full_name = trim($_POST['full_name']);
-        $student->affiliation = !empty($_POST['affiliation']) ? trim($_POST['affiliation']) : null;
-        $student->grade = !empty($_POST['grade']) ? trim($_POST['grade']) : null;
-        $student->counselor_id = !empty($_POST['counselor_id']) ? intval($_POST['counselor_id']) : null;
-        $student->rbm_id = !empty($_POST['rbm_id']) ? intval($_POST['rbm_id']) : null;
-        $student->board_id = $board_id;
-        $student->contact_no = !empty($_POST['contact_no']) ? trim($_POST['contact_no']) : null;
-        $student->email_address = !empty($_POST['email_address']) ? trim($_POST['email_address']) : null;
-        $student->application_year = !empty($_POST['application_year']) ? intval($_POST['application_year']) : null;
+    // Check permissions
+    if (!hasPermission('admin')) {
+        $error_message = "Access denied. You don't have permission to edit students.";
+    } else {
+        // Validate required fields
+        $errors = [];
         
-        // Validate email format if provided
-        if (!empty($student->email_address) && !filter_var($student->email_address, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Please enter a valid email address.";
+        if (empty(trim($_POST['full_name']))) {
+            $errors[] = "Student full name is required.";
         }
         
-        // Create student if no errors
-        if (empty($errors)) {
-            if ($student->create()) {
-                $success_message = "Student created successfully! Student ID: " . $student->student_id;
-                // Clear form data
-                $_POST = array();
+        // Handle custom board
+        $board_id = null;
+        if (!empty($_POST['board_id'])) {
+            if ($_POST['board_id'] === 'other' && !empty($_POST['custom_board'])) {
+                // Add new board
+                $new_board_id = $student->addBoard(trim($_POST['custom_board']));
+                if ($new_board_id) {
+                    $board_id = $new_board_id;
+                }
             } else {
-                $error_message = "Error creating student. Please try again.";
+                $board_id = intval($_POST['board_id']);
+            }
+        }
+        
+        // Set student properties
+        if (empty($errors)) {
+            $student->full_name = trim($_POST['full_name']);
+            $student->affiliation = !empty($_POST['affiliation']) ? trim($_POST['affiliation']) : null;
+            $student->grade = !empty($_POST['grade']) ? trim($_POST['grade']) : null;
+            $student->counselor_id = !empty($_POST['counselor_id']) ? intval($_POST['counselor_id']) : null;
+            $student->rbm_id = !empty($_POST['rbm_id']) ? intval($_POST['rbm_id']) : null;
+            $student->board_id = $board_id;
+            $student->contact_no = !empty($_POST['contact_no']) ? trim($_POST['contact_no']) : null;
+            $student->email_address = !empty($_POST['email_address']) ? trim($_POST['email_address']) : null;
+            $student->application_year = !empty($_POST['application_year']) ? intval($_POST['application_year']) : null;
+            
+            // Validate email format if provided
+            if (!empty($student->email_address) && !filter_var($student->email_address, FILTER_VALIDATE_EMAIL)) {
+                $errors[] = "Please enter a valid email address.";
+            }
+            
+            // Update student if no errors
+            if (empty($errors)) {
+                if ($student->update()) {
+                    $success_message = "Student updated successfully!";
+                } else {
+                    $error_message = "Error updating student. Please try again.";
+                }
+            } else {
+                $error_message = implode("<br>", $errors);
             }
         } else {
             $error_message = implode("<br>", $errors);
         }
-    } else {
-        $error_message = implode("<br>", $errors);
     }
 }
 
 $current_user = getCurrentUser();
-$page_title = "Add Student";
+$page_title = "Edit Student";
 ?>
 <!DOCTYPE html>
 <html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="../Apps/assets/" data-template="vertical-menu-template-free">
@@ -150,7 +166,7 @@ $page_title = "Add Student";
                     <!-- Content -->
                     <div class="container-xxl flex-grow-1 container-p-y">
                         <h4 class="fw-bold py-3 mb-4">
-                            <span class="text-muted fw-light">Student Management /</span> Add Student
+                            <span class="text-muted fw-light">Student Management /</span> Edit Student
                         </h4>
 
                         <?php if (!empty($error_message)): ?>
@@ -167,11 +183,14 @@ $page_title = "Add Student";
                             </div>
                         <?php endif; ?>
 
-                        <!-- Create Student Form -->
+                        <!-- Edit Student Form -->
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="card mb-4">
-                                    <h5 class="card-header">Add New Student</h5>
+                                    <h5 class="card-header">
+                                        Edit Student - <?php echo htmlspecialchars($student->student_id); ?>
+                                        <span class="badge bg-label-info ms-2"><?php echo htmlspecialchars($student->full_name); ?></span>
+                                    </h5>
                                     <div class="card-body">
                                         <form method="POST">
                                             <div class="row">
@@ -179,14 +198,14 @@ $page_title = "Add Student";
                                                 <div class="col-md-6 mb-3">
                                                     <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
                                                     <input type="text" class="form-control" id="full_name" name="full_name" 
-                                                           value="<?php echo isset($_POST['full_name']) ? htmlspecialchars($_POST['full_name']) : ''; ?>" required>
+                                                           value="<?php echo isset($_POST['full_name']) ? htmlspecialchars($_POST['full_name']) : htmlspecialchars($student->full_name); ?>" required>
                                                 </div>
 
                                                 <!-- Email Address -->
                                                 <div class="col-md-6 mb-3">
                                                     <label for="email_address" class="form-label">Email Address</label>
                                                     <input type="email" class="form-control" id="email_address" name="email_address" 
-                                                           value="<?php echo isset($_POST['email_address']) ? htmlspecialchars($_POST['email_address']) : ''; ?>" 
+                                                           value="<?php echo isset($_POST['email_address']) ? htmlspecialchars($_POST['email_address']) : htmlspecialchars($student->email_address); ?>" 
                                                            placeholder="student@example.com">
                                                 </div>
                                             </div>
@@ -196,7 +215,7 @@ $page_title = "Add Student";
                                                 <div class="col-md-6 mb-3">
                                                     <label for="contact_no" class="form-label">Contact No</label>
                                                     <input type="tel" class="form-control" id="contact_no" name="contact_no" 
-                                                           value="<?php echo isset($_POST['contact_no']) ? htmlspecialchars($_POST['contact_no']) : ''; ?>" 
+                                                           value="<?php echo isset($_POST['contact_no']) ? htmlspecialchars($_POST['contact_no']) : htmlspecialchars($student->contact_no); ?>" 
                                                            placeholder="+1234567890">
                                                 </div>
 
@@ -204,7 +223,7 @@ $page_title = "Add Student";
                                                 <div class="col-md-6 mb-3">
                                                     <label for="affiliation" class="form-label">Affiliation</label>
                                                     <input type="text" class="form-control" id="affiliation" name="affiliation" 
-                                                           value="<?php echo isset($_POST['affiliation']) ? htmlspecialchars($_POST['affiliation']) : ''; ?>" 
+                                                           value="<?php echo isset($_POST['affiliation']) ? htmlspecialchars($_POST['affiliation']) : htmlspecialchars($student->affiliation); ?>" 
                                                            placeholder="University, School, or Organization">
                                                 </div>
                                             </div>
@@ -215,14 +234,14 @@ $page_title = "Add Student";
                                                     <label for="grade" class="form-label">Grade</label>
                                                     <select class="form-select" id="grade" name="grade">
                                                         <option value="">Select Grade</option>
-                                                        <option value="7" <?php echo (isset($_POST['grade']) && $_POST['grade'] == '7') ? 'selected' : ''; ?>>Grade 7</option>
-                                                        <option value="8" <?php echo (isset($_POST['grade']) && $_POST['grade'] == '8') ? 'selected' : ''; ?>>Grade 8</option>
-                                                        <option value="9" <?php echo (isset($_POST['grade']) && $_POST['grade'] == '9') ? 'selected' : ''; ?>>Grade 9</option>
-                                                        <option value="10" <?php echo (isset($_POST['grade']) && $_POST['grade'] == '10') ? 'selected' : ''; ?>>Grade 10</option>
-                                                        <option value="11" <?php echo (isset($_POST['grade']) && $_POST['grade'] == '11') ? 'selected' : ''; ?>>Grade 11</option>
-                                                        <option value="12" <?php echo (isset($_POST['grade']) && $_POST['grade'] == '12') ? 'selected' : ''; ?>>Grade 12</option>
-                                                        <option value="undergraduate" <?php echo (isset($_POST['grade']) && $_POST['grade'] == 'undergraduate') ? 'selected' : ''; ?>>Undergraduate</option>
-                                                        <option value="graduate" <?php echo (isset($_POST['grade']) && $_POST['grade'] == 'graduate') ? 'selected' : ''; ?>>Graduate</option>
+                                                        <option value="7" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == '7') ? 'selected' : ''; ?>>Grade 7</option>
+                                                        <option value="8" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == '8') ? 'selected' : ''; ?>>Grade 8</option>
+                                                        <option value="9" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == '9') ? 'selected' : ''; ?>>Grade 9</option>
+                                                        <option value="10" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == '10') ? 'selected' : ''; ?>>Grade 10</option>
+                                                        <option value="11" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == '11') ? 'selected' : ''; ?>>Grade 11</option>
+                                                        <option value="12" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == '12') ? 'selected' : ''; ?>>Grade 12</option>
+                                                        <option value="undergraduate" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == 'undergraduate') ? 'selected' : ''; ?>>Undergraduate</option>
+                                                        <option value="graduate" <?php echo ((isset($_POST['grade']) ? $_POST['grade'] : $student->grade) == 'graduate') ? 'selected' : ''; ?>>Graduate</option>
                                                     </select>
                                                 </div>
 
@@ -232,13 +251,13 @@ $page_title = "Add Student";
                                                     <select class="form-select" id="board_id" name="board_id" onchange="toggleCustomBoard()">
                                                         <option value="">Select Board</option>
                                                         <?php foreach ($boards as $board): 
-                                                            $selected = (isset($_POST['board_id']) && $_POST['board_id'] == $board['id']) ? 'selected' : '';
+                                                            $selected = ((isset($_POST['board_id']) ? $_POST['board_id'] : $student->board_id) == $board['id']) ? 'selected' : '';
                                                         ?>
                                                             <option value="<?php echo $board['id']; ?>" <?php echo $selected; ?>>
                                                                 <?php echo htmlspecialchars($board['name']); ?>
                                                             </option>
                                                         <?php endforeach; ?>
-                                                        <option value="other" <?php echo (isset($_POST['board_id']) && $_POST['board_id'] == 'other') ? 'selected' : ''; ?>>Other</option>
+                                                        <option value="other" <?php echo ((isset($_POST['board_id']) ? $_POST['board_id'] : '') == 'other') ? 'selected' : ''; ?>>Other</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -260,7 +279,7 @@ $page_title = "Add Student";
                                                     <select class="form-select" id="counselor_id" name="counselor_id">
                                                         <option value="">Select Counselor</option>
                                                         <?php foreach ($counselors as $counselor): 
-                                                            $selected = (isset($_POST['counselor_id']) && $_POST['counselor_id'] == $counselor['id']) ? 'selected' : '';
+                                                            $selected = ((isset($_POST['counselor_id']) ? $_POST['counselor_id'] : $student->counselor_id) == $counselor['id']) ? 'selected' : '';
                                                         ?>
                                                             <option value="<?php echo $counselor['id']; ?>" <?php echo $selected; ?>>
                                                                 <?php echo htmlspecialchars($counselor['full_name'] . ' - ' . $counselor['organization_name']); ?>
@@ -274,8 +293,10 @@ $page_title = "Add Student";
                                                     <label for="rbm_id" class="form-label">RBM (Research Branch Manager)</label>
                                                     <select class="form-select" id="rbm_id" name="rbm_id">
                                                         <option value="">Select RBM</option>
-                                                        <?php foreach ($rbm_users as $rbm): ?>
-                                                            <option value="<?php echo $rbm['id']; ?>" <?php echo (isset($_POST['rbm_id']) && $_POST['rbm_id'] == $rbm['id']) ? 'selected' : ''; ?>>
+                                                        <?php foreach ($rbm_users as $rbm): 
+                                                            $selected = ((isset($_POST['rbm_id']) ? $_POST['rbm_id'] : $student->rbm_id) == $rbm['id']) ? 'selected' : '';
+                                                        ?>
+                                                            <option value="<?php echo $rbm['id']; ?>" <?php echo $selected; ?>>
                                                                 <?php echo htmlspecialchars($rbm['full_name']); ?> - <?php echo htmlspecialchars($rbm['branch']); ?>
                                                             </option>
                                                         <?php endforeach; ?>
@@ -288,11 +309,19 @@ $page_title = "Add Student";
                                                 <div class="col-md-6 mb-3">
                                                     <label for="application_year" class="form-label">Application Year</label>
                                                     <input type="number" class="form-control" id="application_year" name="application_year" 
-                                                           value="<?php echo isset($_POST['application_year']) ? htmlspecialchars($_POST['application_year']) : date('Y'); ?>"
+                                                           value="<?php echo isset($_POST['application_year']) ? htmlspecialchars($_POST['application_year']) : htmlspecialchars($student->application_year); ?>"
                                                            min="<?php echo date('Y') - 10; ?>" 
                                                            max="<?php echo date('Y') + 5; ?>" 
                                                            placeholder="<?php echo date('Y'); ?>">
                                                     <div class="form-text">Enter the year when the student applied (<?php echo (date('Y') - 10) . ' - ' . (date('Y') + 5); ?>)</div>
+                                                </div>
+
+                                                <!-- Student ID (read-only) -->
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="student_id_display" class="form-label">Student ID</label>
+                                                    <input type="text" class="form-control" id="student_id_display" 
+                                                           value="<?php echo htmlspecialchars($student->student_id); ?>" readonly>
+                                                    <div class="form-text">Student ID cannot be changed</div>
                                                 </div>
                                             </div>
 
@@ -301,7 +330,7 @@ $page_title = "Add Student";
                                                     <div class="alert alert-info">
                                                         <h6 class="alert-heading mb-1">Note:</h6>
                                                         <ul class="mb-0">
-                                                            <li><strong>Student ID</strong> will be automatically generated (Format: STU[Year][Number])</li>
+                                                            <li><strong>Student ID</strong> cannot be changed once assigned</li>
                                                             <li>Only <strong>Full Name</strong> is required - all other fields are optional</li>
                                                             <li>Students can be assigned to counselors and RBM users for management</li>
                                                             <li>If your board is not listed, select "Other" to add a custom board</li>
@@ -311,7 +340,7 @@ $page_title = "Add Student";
                                             </div>
 
                                             <div class="mt-4">
-                                                <button type="submit" class="btn btn-primary me-2">Create Student</button>
+                                                <button type="submit" class="btn btn-primary me-2">Update Student</button>
                                                 <a href="/students/list.php" class="btn btn-outline-secondary">Cancel</a>
                                             </div>
                                         </form>
@@ -368,4 +397,4 @@ $page_title = "Add Student";
         });
     </script>
 </body>
-</html>
+</html> 

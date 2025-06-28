@@ -129,7 +129,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Filter Users</h5>
                                 <?php if (hasPermission('admin')): ?>
-                                <a href="/research_apps/users/create.php" class="btn btn-primary">
+                                <a href="/users/create.php" class="btn btn-primary">
                                     <i class="bx bx-plus me-1"></i> Add New User
                                 </a>
                                 <?php endif; ?>
@@ -137,27 +137,27 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-2">
-                                        <a href="/research_apps/users/list.php" class="btn btn-outline-secondary w-100 <?php echo !$filter_type ? 'active' : ''; ?>">
+                                        <a href="/users/list.php" class="btn btn-outline-secondary w-100 <?php echo !$filter_type ? 'active' : ''; ?>">
                                             All Users (<?php echo count($users); ?>)
                                         </a>
                                     </div>
                                     <div class="col-md-2">
-                                        <a href="/research_apps/users/list.php?type=admin" class="btn btn-outline-warning w-100 <?php echo $filter_type == 'admin' ? 'active' : ''; ?>">
+                                        <a href="/users/list.php?type=admin" class="btn btn-outline-warning w-100 <?php echo $filter_type == 'admin' ? 'active' : ''; ?>">
                                             Admins
                                         </a>
                                     </div>
                                     <div class="col-md-2">
-                                        <a href="/research_apps/users/list.php?type=mentor" class="btn btn-outline-primary w-100 <?php echo $filter_type == 'mentor' ? 'active' : ''; ?>">
+                                        <a href="/users/list.php?type=mentor" class="btn btn-outline-primary w-100 <?php echo $filter_type == 'mentor' ? 'active' : ''; ?>">
                                             Mentors
                                         </a>
                                     </div>
                                     <div class="col-md-2">
-                                        <a href="/research_apps/users/list.php?type=councillor" class="btn btn-outline-info w-100 <?php echo $filter_type == 'councillor' ? 'active' : ''; ?>">
+                                        <a href="/users/list.php?type=councillor" class="btn btn-outline-info w-100 <?php echo $filter_type == 'councillor' ? 'active' : ''; ?>">
                                             Councillors
                                         </a>
                                     </div>
                                     <div class="col-md-2">
-                                        <a href="/research_apps/users/list.php?type=rbm" class="btn btn-outline-success w-100 <?php echo $filter_type == 'rbm' ? 'active' : ''; ?>">
+                                        <a href="/users/list.php?type=rbm" class="btn btn-outline-success w-100 <?php echo $filter_type == 'rbm' ? 'active' : ''; ?>">
                                             RBMs
                                         </a>
                                     </div>
@@ -240,7 +240,16 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                                 <?php endif; ?>
                                                             <?php elseif ($user_row['user_type'] == 'councillor'): ?>
                                                                 Org: <?php echo htmlspecialchars($user_row['organization_name'] ?? 'N/A'); ?>
-                                                                <br>MOU: <?php echo $user_row['mou_signed'] ? '<span class="text-success">Yes</span>' : '<span class="text-danger">No</span>'; ?>
+                                                                <br>MOU: <?php 
+                                                                    if ($user_row['mou_signed'] && !empty($user_row['mou_drive_link'])): ?>
+                                                                        <a href="<?php echo htmlspecialchars($user_row['mou_drive_link']); ?>" target="_blank" class="text-success text-decoration-none">
+                                                                            <i class="bx bx-link-external"></i> View MOU
+                                                                        </a>
+                                                                    <?php elseif ($user_row['mou_signed']): ?>
+                                                                        <span class="text-success">Yes</span>
+                                                                    <?php else: ?>
+                                                                        <span class="text-danger">No</span>
+                                                                    <?php endif; ?>
                                                                 <?php if (!empty($user_row['contact_no'])): ?>
                                                                     <br>Contact: <?php echo htmlspecialchars($user_row['contact_no']); ?>
                                                                 <?php endif; ?>
@@ -270,6 +279,12 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                                 <i class="bx bx-dots-vertical-rounded"></i>
                                                             </button>
                                                             <div class="dropdown-menu">
+                                                                <?php if ($user_row['user_type'] == 'councillor' && $user_row['mou_signed'] && !empty($user_row['mou_drive_link'])): ?>
+                                                                <a class="dropdown-item" href="<?php echo htmlspecialchars($user_row['mou_drive_link']); ?>" target="_blank">
+                                                                    <i class="bx bx-link-external me-1"></i> View MOU Document
+                                                                </a>
+                                                                <div class="dropdown-divider"></div>
+                                                                <?php endif; ?>
                                                                 <?php if (hasPermission('admin')): ?>
                                                                 <a class="dropdown-item text-danger" href="?delete=<?php echo $user_row['id']; ?>" onclick="return confirm('Are you sure you want to delete this user?')">
                                                                     <i class="bx bx-trash me-1"></i> Delete

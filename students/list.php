@@ -6,7 +6,7 @@ require_once '../classes/User.php';
 
 // Check if user is logged in
 if (!isLoggedIn()) {
-    header('Location: /research_apps/login.php');
+    header('Location: /login.php');
     exit();
 }
 
@@ -36,6 +36,7 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
 $search_term = isset($_GET['search']) ? trim($_GET['search']) : '';
 $filter_rbm = isset($_GET['rbm']) ? intval($_GET['rbm']) : 0;
 $filter_counselor = isset($_GET['counselor']) ? intval($_GET['counselor']) : 0;
+$filter_year = isset($_GET['year']) ? intval($_GET['year']) : 0;
 
 // Get students based on search and filters
 if (!empty($search_term)) {
@@ -44,6 +45,8 @@ if (!empty($search_term)) {
     $stmt = $student->getByRBM($filter_rbm);
 } elseif ($filter_counselor > 0) {
     $stmt = $student->getByCounselor($filter_counselor);
+} elseif ($filter_year > 0) {
+    $stmt = $student->getByApplicationYear($filter_year);
 } else {
     $stmt = $student->read();
 }
@@ -65,6 +68,13 @@ $counselor_stmt = $student->getCounselors();
 $counselors = [];
 while ($row = $counselor_stmt->fetch(PDO::FETCH_ASSOC)) {
     $counselors[] = $row;
+}
+
+// Get application years for filter dropdown
+$years_stmt = $student->getApplicationYears();
+$application_years = [];
+while ($row = $years_stmt->fetch(PDO::FETCH_ASSOC)) {
+    $application_years[] = $row;
 }
 
 $current_user = getCurrentUser();
@@ -100,6 +110,28 @@ $page_title = "Student Management";
     <!-- Helpers -->
     <script src="../Apps/assets/vendor/js/helpers.js"></script>
     <script src="../Apps/assets/js/config.js"></script>
+    
+    <!-- Custom CSS for dropdown fix -->
+    <style>
+        /* Simple and reliable dropdown fix */
+        .table-responsive {
+            overflow: visible;
+        }
+        
+        .dropdown-menu {
+            position: absolute !important;
+            z-index: 1050 !important;
+        }
+        
+        /* Force container to not clip */
+        .card {
+            overflow: visible !important;
+        }
+        
+        .card-body {
+            overflow: visible !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -142,19 +174,19 @@ $page_title = "Student Management";
                         <div class="card mb-4">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Search & Filter</h5>
-                                <a href="/research_apps/students/create.php" class="btn btn-primary">
+                                <a href="/students/create.php" class="btn btn-primary">
                                     <i class="bx bx-plus me-1"></i> Add New Student
                                 </a>
                             </div>
                             <div class="card-body">
                                 <form method="GET" class="row g-3">
-                                    <div class="col-md-3">
+                                    <div class="col-lg-3 col-md-6">
                                         <label for="search" class="form-label">Search</label>
                                         <input type="text" class="form-control" id="search" name="search" 
                                                value="<?php echo htmlspecialchars($search_term); ?>" 
                                                placeholder="Search by name, student ID, email...">
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-lg-3 col-md-6">
                                         <label for="rbm" class="form-label">Filter by RBM</label>
                                         <select class="form-select" id="rbm" name="rbm">
                                             <option value="0">All RBMs</option>
@@ -165,7 +197,7 @@ $page_title = "Student Management";
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-lg-3 col-md-6">
                                         <label for="counselor" class="form-label">Filter by Counselor</label>
                                         <select class="form-select" id="counselor" name="counselor">
                                             <option value="0">All Counselors</option>
@@ -176,9 +208,24 @@ $page_title = "Student Management";
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
-                                    <div class="col-md-3 d-flex align-items-end">
-                                        <button type="submit" class="btn btn-primary me-2">Search</button>
-                                        <a href="/research_apps/students/list.php" class="btn btn-outline-secondary">Clear</a>
+                                    <div class="col-lg-3 col-md-6">
+                                        <label for="year" class="form-label">Filter by Year</label>
+                                        <select class="form-select" id="year" name="year">
+                                            <option value="0">All Years</option>
+                                            <?php foreach ($application_years as $year): ?>
+                                                <option value="<?php echo $year['application_year']; ?>" <?php echo ($filter_year == $year['application_year']) ? 'selected' : ''; ?>>
+                                                    <?php echo htmlspecialchars($year['application_year']); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 d-flex justify-content-end mt-3">
+                                        <button type="submit" class="btn btn-primary me-2">
+                                            <i class="bx bx-search me-1"></i> Search
+                                        </button>
+                                        <a href="/students/list.php" class="btn btn-outline-secondary">
+                                            <i class="bx bx-refresh me-1"></i> Clear
+                                        </a>
                                     </div>
                                 </form>
                             </div>
@@ -295,13 +342,16 @@ $page_title = "Student Management";
                                                             <span class="text-muted">N/A</span>
                                                         <?php endif; ?>
                                                     </td>
-                                                    <td>
-                                                        <div class="dropdown">
-                                                            <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown">
+                                                    <td class="table-actions">
+                                                        <div class="dropup">
+                                                            <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-expanded="false">
                                                                 <i class="bx bx-dots-vertical-rounded"></i>
                                                             </button>
-                                                            <div class="dropdown-menu">
+                                                            <div class="dropdown-menu dropdown-menu-end">
                                                                 <?php if (hasPermission('admin')): ?>
+                                                                <a class="dropdown-item" href="/students/edit.php?id=<?php echo $student_row['id']; ?>">
+                                                                    <i class="bx bx-edit me-1"></i> Edit
+                                                                </a>
                                                                 <a class="dropdown-item text-danger" href="?delete=<?php echo $student_row['id']; ?>" onclick="return confirm('Are you sure you want to delete this student?')">
                                                                     <i class="bx bx-trash me-1"></i> Delete
                                                                 </a>

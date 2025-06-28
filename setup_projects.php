@@ -141,9 +141,9 @@ try {
     
     echo "<p><strong>Next Steps:</strong></p>";
     echo "<ul>";
-    echo "<li>🔗 <a href='/research_apps/projects/list.php'>View Projects List</a></li>";
-    echo "<li>🔗 <a href='/research_apps/projects/create.php'>Create New Project</a></li>";
-    echo "<li>🔗 <a href='/research_apps/dashboard.php'>Go to Dashboard</a></li>";
+    echo "<li>🔗 <a href='/projects/list.php'>View Projects List</a></li>";
+echo "<li>🔗 <a href='/projects/create.php'>Create New Project</a></li>";
+echo "<li>🔗 <a href='/dashboard.php'>Go to Dashboard</a></li>";
     echo "</ul>";
     
     echo "<p style='color: red;'><strong>🗑️ Security Note:</strong> Delete this setup file after successful initialization!</p>";

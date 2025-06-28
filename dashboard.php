@@ -123,9 +123,9 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                                     <strong>Learn Tech For Future</strong> - You are logged in as <span class="fw-bold"><?php echo ucfirst($current_user['user_type']); ?></span>. 
                                                     Use the navigation menu to manage users, students, projects, and access our research management platform.
                                                 </p>
-                                                <a href="/research_apps/projects/list.php" class="btn btn-sm btn-primary me-2">View Projects</a>
-                                                <a href="/research_apps/users/list.php" class="btn btn-sm btn-outline-primary me-2">View Users</a>
-                                                <a href="/research_apps/students/list.php" class="btn btn-sm btn-outline-secondary">View Students</a>
+                                                <a href="/projects/list.php" class="btn btn-sm btn-primary me-2">View Projects</a>
+                                                <a href="/users/list.php" class="btn btn-sm btn-outline-primary me-2">View Users</a>
+                                                <a href="/students/list.php" class="btn btn-sm btn-outline-secondary">View Students</a>
                                             </div>
                                         </div>
                                         <div class="col-sm-5 text-center text-sm-left">
@@ -184,7 +184,7 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                                     <h3 class="mb-0"><?php echo $active_projects; ?></h3>
                                                     <small class="text-success fw-semibold">
                                                         <i class="bx bx-trending-up"></i> 
-                                                        <a href="/research_apps/projects/list.php" class="text-success">View All</a>
+                                                        <a href="/projects/list.php" class="text-success">View All</a>
                                                     </small>
                                                 </div>
                                             </div>
@@ -211,7 +211,7 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                                     <small class="text-danger fw-semibold">
                                                         <i class="bx bx-error-circle"></i> 
                                                         <?php if ($missed_deadlines > 0): ?>
-                                                            <a href="/research_apps/projects/list.php?filter=overdue" class="text-danger">View Overdue</a>
+                                                            <a href="/projects/list.php?filter=overdue" class="text-danger">View Overdue</a>
                                                         <?php else: ?>
                                                             All on track
                                                         <?php endif; ?>
@@ -241,7 +241,7 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                                     <small class="text-warning fw-semibold">
                                                         <i class="bx bx-alarm"></i> 
                                                         <?php if ($approaching_deadlines > 0): ?>
-                                                            <a href="/research_apps/projects/list.php?filter=due_soon" class="text-warning">View Due Soon</a>
+                                                            <a href="/projects/list.php?filter=due_soon" class="text-warning">View Due Soon</a>
                                                         <?php else: ?>
                                                             No urgent items
                                                         <?php endif; ?>

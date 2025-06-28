@@ -62,20 +62,20 @@ $current_user = getCurrentUser();
                         <div class="dropdown-divider"></div>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/research_apps/dashboard.php">
+                        <a class="dropdown-item" href="/dashboard.php">
                             <i class="bx bx-user me-2"></i>
                             <span class="align-middle">My Profile</span>
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/research_apps/dashboard.php">
+                        <a class="dropdown-item" href="/dashboard.php">
                             <i class="bx bx-cog me-2"></i>
                             <span class="align-middle">Settings</span>
                         </a>
                     </li>
                     <?php if (hasPermission('admin')): ?>
                     <li>
-                        <a class="dropdown-item" href="/research_apps/users/list.php">
+                        <a class="dropdown-item" href="/users/list.php">
                             <i class="bx bx-user-circle me-2"></i>
                             <span class="align-middle">Manage Users</span>
                         </a>
@@ -85,7 +85,7 @@ $current_user = getCurrentUser();
                         <div class="dropdown-divider"></div>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="/research_apps/logout.php">
+                        <a class="dropdown-item" href="/logout.php">
                             <i class="bx bx-power-off me-2"></i>
                             <span class="align-middle">Log Out</span>
                         </a>
