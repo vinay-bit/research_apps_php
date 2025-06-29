@@ -75,6 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
                 $data['reviewer_changes'] = trim($_POST['reviewer_changes']);
                 $data['formatted_paper_link'] = trim($_POST['formatted_paper_link']);
                 $data['presentation_link'] = trim($_POST['presentation_link']);
+                $data['attended'] = isset($_POST['attended']) ? intval($_POST['attended']) : null;
+                $data['certificate_received'] = isset($_POST['certificate_received']) ? intval($_POST['certificate_received']) : null;
             }
             $success = $inPublication->updateConferenceApplication($application_id, $data);
         } else {
@@ -336,6 +338,8 @@ $current_user = $_SESSION;
                                                         <th>Conference Apps</th>
                                                         <th>Journal Apps</th>
                                                         <th>Accepted</th>
+                                                        <th>Attended</th>
+                                                        <th>Certificate</th>
                                                         <th>Actions</th>
                                                     </tr>
                                                 </thead>
@@ -384,6 +388,65 @@ $current_user = $_SESSION;
                                                                     <span class="badge bg-secondary">0</span>
                                                                 <?php endif; ?>
                                                             </td>
+                                                            <td>
+                                                                <?php 
+                                                                // Get conference applications for attendance status
+                                                                $conf_applications = $inPublication->getConferenceApplications($pub['id']);
+                                                                $attended_count = 0;
+                                                                $not_attended_count = 0;
+                                                                foreach ($conf_applications as $app) {
+                                                                    if ($app['status'] == 'accepted') {
+                                                                        if (isset($app['attended']) && $app['attended'] === 1) {
+                                                                            $attended_count++;
+                                                                        } elseif (isset($app['attended']) && $app['attended'] === 0) {
+                                                                            $not_attended_count++;
+                                                                        }
+                                                                    }
+                                                                }
+                                                                ?>
+                                                                <?php if ($attended_count > 0): ?>
+                                                                    <span class="badge bg-success" title="Attended conferences">
+                                                                        <i class="bx bx-check me-1"></i><?php echo $attended_count; ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                                <?php if ($not_attended_count > 0): ?>
+                                                                    <span class="badge bg-warning" title="Not attended conferences">
+                                                                        <i class="bx bx-x me-1"></i><?php echo $not_attended_count; ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                                <?php if ($attended_count == 0 && $not_attended_count == 0): ?>
+                                                                    <span class="text-muted">-</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td>
+                                                                <?php 
+                                                                // Get certificate status
+                                                                $certificate_count = 0;
+                                                                $no_certificate_count = 0;
+                                                                foreach ($conf_applications as $app) {
+                                                                    if ($app['status'] == 'accepted') {
+                                                                        if (isset($app['certificate_received']) && $app['certificate_received'] === 1) {
+                                                                            $certificate_count++;
+                                                                        } elseif (isset($app['certificate_received']) && $app['certificate_received'] === 0) {
+                                                                            $no_certificate_count++;
+                                                                        }
+                                                                    }
+                                                                }
+                                                                ?>
+                                                                <?php if ($certificate_count > 0): ?>
+                                                                    <span class="badge bg-primary" title="Certificates received">
+                                                                        <i class="bx bx-award me-1"></i><?php echo $certificate_count; ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                                <?php if ($no_certificate_count > 0): ?>
+                                                                    <span class="badge bg-secondary" title="No certificates">
+                                                                        <i class="bx bx-award me-1"></i><?php echo $no_certificate_count; ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                                <?php if ($certificate_count == 0 && $no_certificate_count == 0): ?>
+                                                                    <span class="text-muted">-</span>
+                                                                <?php endif; ?>
+                                                            </td>
                                                             <td onclick="event.stopPropagation();">
                                                                 <div class="dropdown">
                                                                     <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
@@ -402,186 +465,295 @@ $current_user = $_SESSION;
                                                         </tr>
                                                         <!-- Expandable Details Row -->
                                                         <tr id="details-<?php echo $pub['id']; ?>" class="details-row" style="display: none;">
-                                                            <td colspan="7">
-                                                                <div class="p-3 bg-light">
-                                                                    <div class="row">
-                                                                        <div class="col-md-4">
-                                                                            <h6>Links & Documents</h6>
-                                                                            <div class="d-flex flex-wrap gap-1">
-                                                                                <?php if ($pub['first_draft_link']): ?>
-                                                                                    <a href="<?php echo htmlspecialchars($pub['first_draft_link']); ?>" target="_blank" class="btn btn-xs btn-outline-primary">
-                                                                                        <i class="bx bx-file me-1"></i>First Draft
-                                                                                    </a>
-                                                                                <?php endif; ?>
-                                                                                <?php if ($pub['plagiarism_report_link']): ?>
-                                                                                    <a href="<?php echo htmlspecialchars($pub['plagiarism_report_link']); ?>" target="_blank" class="btn btn-xs btn-outline-warning">
-                                                                                        <i class="bx bx-shield me-1"></i>Plagiarism Report
-                                                                                    </a>
-                                                                                <?php endif; ?>
-                                                                                <?php if ($pub['ai_detection_link']): ?>
-                                                                                    <a href="<?php echo htmlspecialchars($pub['ai_detection_link']); ?>" target="_blank" class="btn btn-xs btn-outline-info">
-                                                                                        <i class="bx bx-brain me-1"></i>AI Detection
-                                                                                    </a>
-                                                                                <?php endif; ?>
-                                                                                <?php if ($pub['final_paper_link']): ?>
-                                                                                    <a href="<?php echo htmlspecialchars($pub['final_paper_link']); ?>" target="_blank" class="btn btn-xs btn-outline-success">
-                                                                                        <i class="bx bx-check me-1"></i>Final Paper
-                                                                                    </a>
-                                                                                <?php endif; ?>
+                                                            <td colspan="9">
+                                                                <div class="p-4 bg-light border-start border-primary border-3">
+                                                                    <!-- Tab Navigation -->
+                                                                    <ul class="nav nav-tabs mb-3" id="detailsTab<?php echo $pub['id']; ?>" role="tablist">
+                                                                        <li class="nav-item" role="presentation">
+                                                                            <button class="nav-link active" id="info-tab-<?php echo $pub['id']; ?>" data-bs-toggle="tab" data-bs-target="#info-<?php echo $pub['id']; ?>" type="button" role="tab">
+                                                                                <i class="bx bx-info-circle me-1"></i>Publication Info
+                                                                            </button>
+                                                                        </li>
+                                                                        <li class="nav-item" role="presentation">
+                                                                            <button class="nav-link" id="applications-tab-<?php echo $pub['id']; ?>" data-bs-toggle="tab" data-bs-target="#applications-<?php echo $pub['id']; ?>" type="button" role="tab">
+                                                                                <i class="bx bx-send me-1"></i>Applications 
+                                                                                <span class="badge bg-primary ms-1"><?php echo ($pub['conference_applications'] + $pub['journal_applications']); ?></span>
+                                                                            </button>
+                                                                        </li>
+                                                                    </ul>
+
+                                                                    <!-- Tab Content -->
+                                                                    <div class="tab-content" id="detailsTabContent<?php echo $pub['id']; ?>">
+                                                                        <!-- Publication Info Tab -->
+                                                                        <div class="tab-pane fade show active" id="info-<?php echo $pub['id']; ?>" role="tabpanel">
+                                                                            <div class="row g-4">
+                                                                                <div class="col-md-4">
+                                                                                    <div class="card h-100">
+                                                                                        <div class="card-body">
+                                                                                            <h6 class="card-title text-primary mb-3">
+                                                                                                <i class="bx bx-link me-2"></i>Documents & Links
+                                                                                            </h6>
+                                                                                            <div class="d-grid gap-2">
+                                                                                                <?php if ($pub['first_draft_link']): ?>
+                                                                                                    <a href="<?php echo htmlspecialchars($pub['first_draft_link']); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                                                        <i class="bx bx-file me-2"></i>First Draft
+                                                                                                    </a>
+                                                                                                <?php endif; ?>
+                                                                                                <?php if ($pub['plagiarism_report_link']): ?>
+                                                                                                    <a href="<?php echo htmlspecialchars($pub['plagiarism_report_link']); ?>" target="_blank" class="btn btn-sm btn-outline-warning">
+                                                                                                        <i class="bx bx-shield me-2"></i>Plagiarism Report
+                                                                                                    </a>
+                                                                                                <?php endif; ?>
+                                                                                                <?php if ($pub['ai_detection_link']): ?>
+                                                                                                    <a href="<?php echo htmlspecialchars($pub['ai_detection_link']); ?>" target="_blank" class="btn btn-sm btn-outline-info">
+                                                                                                        <i class="bx bx-brain me-2"></i>AI Detection
+                                                                                                    </a>
+                                                                                                <?php endif; ?>
+                                                                                                <?php if ($pub['final_paper_link']): ?>
+                                                                                                    <a href="<?php echo htmlspecialchars($pub['final_paper_link']); ?>" target="_blank" class="btn btn-sm btn-outline-success">
+                                                                                                        <i class="bx bx-check me-2"></i>Final Paper
+                                                                                                    </a>
+                                                                                                <?php endif; ?>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                
+                                                                                <div class="col-md-4">
+                                                                                    <div class="card h-100">
+                                                                                        <div class="card-body">
+                                                                                            <h6 class="card-title text-success mb-3">
+                                                                                                <i class="bx bx-group me-2"></i>Authors
+                                                                                            </h6>
+                                                                                            <?php if (!empty($students)): ?>
+                                                                                                <?php foreach ($students as $student): ?>
+                                                                                                    <div class="d-flex align-items-center mb-3">
+                                                                                                        <div class="avatar-initial bg-light text-primary rounded-circle me-3" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                                                                                                            <i class="bx bx-user"></i>
+                                                                                                        </div>
+                                                                                                        <div>
+                                                                                                            <div class="fw-semibold"><?php echo htmlspecialchars($student['full_name']); ?></div>
+                                                                                                            <small class="text-muted"><?php echo htmlspecialchars($student['student_affiliation'] ?? $student['original_affiliation']); ?></small>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                <?php endforeach; ?>
+                                                                                            <?php else: ?>
+                                                                                                <div class="text-center text-muted">
+                                                                                                    <i class="bx bx-user-x display-6"></i>
+                                                                                                    <p class="mt-2">No authors assigned</p>
+                                                                                                </div>
+                                                                                            <?php endif; ?>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                
+                                                                                <div class="col-md-4">
+                                                                                    <div class="card h-100">
+                                                                                        <div class="card-body">
+                                                                                            <h6 class="card-title text-info mb-3">
+                                                                                                <i class="bx bx-user-check me-2"></i>Mentor & Summary
+                                                                                            </h6>
+                                                                                            <?php if ($pub['mentor_name']): ?>
+                                                                                                <div class="d-flex align-items-center mb-3">
+                                                                                                    <div class="avatar-initial bg-info text-white rounded-circle me-3" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                                                                                                        <i class="bx bx-user-circle"></i>
+                                                                                                    </div>
+                                                                                                    <div>
+                                                                                                        <div class="fw-semibold"><?php echo htmlspecialchars($pub['mentor_name']); ?></div>
+                                                                                                        <?php if ($pub['mentor_affiliation']): ?>
+                                                                                                            <small class="text-muted"><?php echo htmlspecialchars($pub['mentor_affiliation']); ?></small>
+                                                                                                        <?php endif; ?>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            <?php endif; ?>
+                                                                                            
+                                                                                            <hr class="my-3">
+                                                                                            
+                                                                                            <div class="text-center">
+                                                                                                <div class="row text-center">
+                                                                                                    <div class="col-6">
+                                                                                                        <div class="border rounded p-2">
+                                                                                                            <div class="h5 mb-0 text-warning"><?php echo $pub['conference_applications']; ?></div>
+                                                                                                            <small class="text-muted">Conferences</small>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                    <div class="col-6">
+                                                                                                        <div class="border rounded p-2">
+                                                                                                            <div class="h5 mb-0 text-info"><?php echo $pub['journal_applications']; ?></div>
+                                                                                                            <small class="text-muted">Journals</small>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <?php if (($pub['accepted_conferences'] + $pub['accepted_journals']) > 0): ?>
+                                                                                                    <div class="mt-2">
+                                                                                                        <span class="badge bg-success">
+                                                                                                            <i class="bx bx-check me-1"></i><?php echo ($pub['accepted_conferences'] + $pub['accepted_journals']); ?> Accepted
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                <?php endif; ?>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                        <div class="col-md-4">
-                                                                            <h6>All Authors</h6>
-                                                                            <?php if (!empty($students)): ?>
-                                                                                <?php foreach ($students as $student): ?>
-                                                                                    <div class="mb-1">
-                                                                                        <small><strong><?php echo htmlspecialchars($student['full_name']); ?></strong></small>
-                                                                                        <br><small class="text-muted"><?php echo htmlspecialchars($student['student_affiliation'] ?? $student['original_affiliation']); ?></small>
-                                                                                    </div>
-                                                                                <?php endforeach; ?>
-                                                                            <?php else: ?>
-                                                                                <small class="text-muted">No authors assigned</small>
-                                                                            <?php endif; ?>
-                                                                        </div>
-                                                                        <div class="col-md-4">
-                                                                            <h6>Mentor & Applications</h6>
-                                                                            <?php if ($pub['mentor_name']): ?>
-                                                                                <div class="mb-2">
-                                                                                    <small><strong><?php echo htmlspecialchars($pub['mentor_name']); ?></strong></small>
-                                                                                    <?php if ($pub['mentor_affiliation']): ?>
-                                                                                        <br><small class="text-muted"><?php echo htmlspecialchars($pub['mentor_affiliation']); ?></small>
-                                                                                    <?php endif; ?>
-                                                                                </div>
-                                                                            <?php endif; ?>
+
+                                                                        <!-- Applications Tab -->
+                                                                        <div class="tab-pane fade" id="applications-<?php echo $pub['id']; ?>" role="tabpanel">
+                                                                            <?php 
+                                                                            $conf_applications = $inPublication->getConferenceApplications($pub['id']);
+                                                                            $journal_applications = $inPublication->getJournalApplications($pub['id']);
+                                                                            ?>
                                                                             
-                                                                            <!-- Application Status Summary -->
-                                                                            <?php if ($pub['conference_applications'] > 0 || $pub['journal_applications'] > 0): ?>
-                                                                                <div class="mt-2">
-                                                                                    <small class="text-muted">Application Summary:</small>
-                                                                                    <ul class="list-unstyled small">
-                                                                                        <?php if ($pub['conference_applications'] > 0): ?>
-                                                                                            <li>Conferences: <?php echo $pub['conference_applications']; ?> applied, <?php echo $pub['accepted_conferences']; ?> accepted</li>
-                                                                                        <?php endif; ?>
-                                                                                        <?php if ($pub['journal_applications'] > 0): ?>
-                                                                                            <li>Journals: <?php echo $pub['journal_applications']; ?> applied, <?php echo $pub['accepted_journals']; ?> accepted</li>
-                                                                                        <?php endif; ?>
-                                                                                    </ul>
-                                                                                </div>
-                                                                            <?php endif; ?>
-                                                                        </div>
-                                                                    </div>
-                                                                    
-                                                                    <!-- Applications Details -->
-                                                                    <?php 
-                                                                    $conf_applications = $inPublication->getConferenceApplications($pub['id']);
-                                                                    $journal_applications = $inPublication->getJournalApplications($pub['id']);
-                                                                    ?>
-                                                                    <?php if (!empty($conf_applications) || !empty($journal_applications)): ?>
-                                                                        <div class="row mt-3">
                                                                             <?php if (!empty($conf_applications)): ?>
-                                                                                <div class="col-md-6">
-                                                                                    <h6>Conference Applications</h6>
-                                                                                    <div class="table-responsive">
-                                                                                        <table class="table table-sm">
-                                                                                            <thead>
-                                                                                                <tr>
-                                                                                                    <th>Conference</th>
-                                                                                                    <th>Status</th>
-                                                                                                    <th>Applied</th>
-                                                                                                    <th>Action</th>
-                                                                                                </tr>
-                                                                                            </thead>
-                                                                                            <tbody>
-                                                                                                <?php foreach ($conf_applications as $app): ?>
-                                                                                                    <tr>
-                                                                                                        <td><?php echo htmlspecialchars($app['conference_name']); ?></td>
-                                                                                                        <td>
-                                                                                                            <?php
-                                                                                                            $status_class = 'secondary';
-                                                                                                            if ($app['status'] == 'accepted') $status_class = 'success';
-                                                                                                            elseif ($app['status'] == 'rejected') $status_class = 'danger';
-                                                                                                            elseif ($app['status'] == 'under_review') $status_class = 'warning';
-                                                                                                            ?>
-                                                                                                            <span class="badge bg-<?php echo $status_class; ?>"><?php echo ucfirst(str_replace('_', ' ', $app['status'])); ?></span>
-                                                                                                            <?php if ($app['status'] == 'accepted' && $app['acceptance_date']): ?>
-                                                                                                                <br><small class="text-success">Accepted: <?php echo date('M d, Y', strtotime($app['acceptance_date'])); ?></small>
-                                                                                                            <?php endif; ?>
-                                                                                                        </td>
-                                                                                                        <td><?php echo date('M d, Y', strtotime($app['application_date'])); ?></td>
-                                                                                                        <td>
-                                                                                                            <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal" onclick="setStatusUpdateWithData('conference', <?php echo $app['id']; ?>, '<?php echo $app['status']; ?>', '<?php echo $app['response_date']; ?>', <?php echo json_encode($app['feedback']); ?>, '<?php echo $app['acceptance_date']; ?>', <?php echo json_encode($app['reviewer_changes']); ?>, '<?php echo $app['formatted_paper_link']; ?>', '<?php echo $app['presentation_link']; ?>')">
-                                                                                                                Update
-                                                                                                            </button>
-                                                                                                            <?php if ($app['status'] == 'accepted'): ?>
-                                                                                                                <br>
+                                                                                <div class="mb-4">
+                                                                                    <h6 class="mb-3">
+                                                                                        <i class="bx bx-calendar-event text-warning me-2"></i>Conference Applications
+                                                                                    </h6>
+                                                                                    <?php foreach ($conf_applications as $app): ?>
+                                                                                        <div class="card mb-3">
+                                                                                            <div class="card-body">
+                                                                                                <div class="row align-items-center">
+                                                                                                    <div class="col-md-4">
+                                                                                                        <h6 class="mb-1"><?php echo htmlspecialchars($app['conference_name']); ?></h6>
+                                                                                                        <small class="text-muted">Applied: <?php echo date('M d, Y', strtotime($app['application_date'])); ?></small>
+                                                                                                    </div>
+                                                                                                    <div class="col-md-3">
+                                                                                                        <?php
+                                                                                                        $status_class = 'secondary';
+                                                                                                        if ($app['status'] == 'accepted') $status_class = 'success';
+                                                                                                        elseif ($app['status'] == 'rejected') $status_class = 'danger';
+                                                                                                        elseif ($app['status'] == 'under_review') $status_class = 'warning';
+                                                                                                        ?>
+                                                                                                        <span class="badge bg-<?php echo $status_class; ?> fs-6"><?php echo ucfirst(str_replace('_', ' ', $app['status'])); ?></span>
+                                                                                                        <?php if ($app['status'] == 'accepted' && $app['acceptance_date']): ?>
+                                                                                                            <br><small class="text-success mt-1">Accepted: <?php echo date('M d, Y', strtotime($app['acceptance_date'])); ?></small>
+                                                                                                        <?php endif; ?>
+                                                                                                    </div>
+                                                                                                    <div class="col-md-3">
+                                                                                                        <?php if ($app['status'] == 'accepted'): ?>
+                                                                                                            <div class="d-flex gap-1 flex-wrap">
                                                                                                                 <?php if ($app['formatted_paper_link']): ?>
-                                                                                                                    <a href="<?php echo htmlspecialchars($app['formatted_paper_link']); ?>" target="_blank" class="btn btn-xs btn-outline-success mt-1">
-                                                                                                                        <i class="bx bx-file me-1"></i>Paper
+                                                                                                                    <a href="<?php echo htmlspecialchars($app['formatted_paper_link']); ?>" target="_blank" class="btn btn-sm btn-outline-success" title="Formatted Paper">
+                                                                                                                        <i class="bx bx-file"></i>
                                                                                                                     </a>
                                                                                                                 <?php endif; ?>
                                                                                                                 <?php if ($app['presentation_link']): ?>
-                                                                                                                    <a href="<?php echo htmlspecialchars($app['presentation_link']); ?>" target="_blank" class="btn btn-xs btn-outline-warning mt-1">
-                                                                                                                        <i class="bx bx-slideshow me-1"></i>PPT
+                                                                                                                    <a href="<?php echo htmlspecialchars($app['presentation_link']); ?>" target="_blank" class="btn btn-sm btn-outline-warning" title="Presentation">
+                                                                                                                        <i class="bx bx-slideshow"></i>
                                                                                                                     </a>
                                                                                                                 <?php endif; ?>
-                                                                                                            <?php endif; ?>
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                    <?php if ($app['status'] == 'accepted' && $app['reviewer_changes']): ?>
-                                                                                                        <tr>
-                                                                                                            <td colspan="4" class="bg-light">
-                                                                                                                <small><strong>Reviewer Changes:</strong> <?php echo nl2br(htmlspecialchars($app['reviewer_changes'])); ?></small>
-                                                                                                            </td>
-                                                                                                        </tr>
-                                                                                                    <?php endif; ?>
-                                                                                                <?php endforeach; ?>
-                                                                                            </tbody>
-                                                                                        </table>
-                                                                                    </div>
+                                                                                                                <?php if (isset($app['attended']) && $app['attended'] === 1): ?>
+                                                                                                                    <span class="badge bg-success" title="Conference Attended">
+                                                                                                                        <i class="bx bx-check"></i> Attended
+                                                                                                                    </span>
+                                                                                                                <?php elseif (isset($app['attended']) && $app['attended'] === 0): ?>
+                                                                                                                    <span class="badge bg-warning" title="Conference Not Attended">
+                                                                                                                        <i class="bx bx-x"></i> Not Attended
+                                                                                                                    </span>
+                                                                                                                <?php endif; ?>
+                                                                                                                <?php if (isset($app['certificate_received']) && $app['certificate_received'] === 1): ?>
+                                                                                                                    <span class="badge bg-primary" title="Certificate Received">
+                                                                                                                        <i class="bx bx-award"></i> Certificate
+                                                                                                                    </span>
+                                                                                                                <?php elseif (isset($app['certificate_received']) && $app['certificate_received'] === 0): ?>
+                                                                                                                    <span class="badge bg-secondary" title="No Certificate">
+                                                                                                                        <i class="bx bx-award"></i> No Certificate
+                                                                                                                    </span>
+                                                                                                                <?php endif; ?>
+                                                                                                            </div>
+                                                                                                        <?php endif; ?>
+                                                                                                    </div>
+                                                                                                    <div class="col-md-2 text-end">
+                                                                                                        <button class="btn btn-sm btn-outline-primary update-status-btn" 
+                                                                                                               data-bs-toggle="modal" 
+                                                                                                               data-bs-target="#updateStatusModal"
+                                                                                                               data-type="conference"
+                                                                                                               data-id="<?php echo $app['id']; ?>"
+                                                                                                               data-status="<?php echo htmlspecialchars($app['status']); ?>"
+                                                                                                               data-response-date="<?php echo htmlspecialchars($app['response_date'] ?? ''); ?>"
+                                                                                                               data-feedback="<?php echo htmlspecialchars($app['feedback'] ?? ''); ?>"
+                                                                                                               data-acceptance-date="<?php echo htmlspecialchars($app['acceptance_date'] ?? ''); ?>"
+                                                                                                               data-reviewer-changes="<?php echo htmlspecialchars($app['reviewer_changes'] ?? ''); ?>"
+                                                                                                               data-formatted-paper-link="<?php echo htmlspecialchars($app['formatted_paper_link'] ?? ''); ?>"
+                                                                                                               data-presentation-link="<?php echo htmlspecialchars($app['presentation_link'] ?? ''); ?>"
+                                                                                                               data-attended="<?php echo isset($app['attended']) ? $app['attended'] : ''; ?>"
+                                                                                                               data-certificate-received="<?php echo isset($app['certificate_received']) ? $app['certificate_received'] : ''; ?>">
+                                                                                                            <i class="bx bx-edit me-1"></i>Update
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                
+                                                                                                <?php if ($app['status'] == 'accepted' && $app['reviewer_changes']): ?>
+                                                                                                    <hr class="my-2">
+                                                                                                    <div class="alert alert-info py-2 mb-0">
+                                                                                                        <h6 class="alert-heading mb-1">
+                                                                                                            <i class="bx bx-info-circle me-1"></i>Reviewer Changes
+                                                                                                        </h6>
+                                                                                                        <small><?php echo nl2br(htmlspecialchars($app['reviewer_changes'])); ?></small>
+                                                                                                    </div>
+                                                                                                <?php endif; ?>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    <?php endforeach; ?>
                                                                                 </div>
                                                                             <?php endif; ?>
                                                                             
                                                                             <?php if (!empty($journal_applications)): ?>
-                                                                                <div class="col-md-6">
-                                                                                    <h6>Journal Applications</h6>
-                                                                                    <div class="table-responsive">
-                                                                                        <table class="table table-sm">
-                                                                                            <thead>
-                                                                                                <tr>
-                                                                                                    <th>Journal</th>
-                                                                                                    <th>Status</th>
-                                                                                                    <th>Applied</th>
-                                                                                                    <th>Action</th>
-                                                                                                </tr>
-                                                                                            </thead>
-                                                                                            <tbody>
-                                                                                                <?php foreach ($journal_applications as $app): ?>
-                                                                                                    <tr>
-                                                                                                        <td><?php echo htmlspecialchars($app['journal_name']); ?></td>
-                                                                                                        <td>
-                                                                                                            <?php
-                                                                                                            $status_class = 'secondary';
-                                                                                                            if ($app['status'] == 'accepted') $status_class = 'success';
-                                                                                                            elseif ($app['status'] == 'rejected') $status_class = 'danger';
-                                                                                                            elseif ($app['status'] == 'under_review') $status_class = 'warning';
-                                                                                                            ?>
-                                                                                                            <span class="badge bg-<?php echo $status_class; ?>"><?php echo ucfirst(str_replace('_', ' ', $app['status'])); ?></span>
-                                                                                                        </td>
-                                                                                                        <td><?php echo date('M d, Y', strtotime($app['application_date'])); ?></td>
-                                                                                                        <td>
-                                                                                                            <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal" onclick="setStatusUpdateWithData('journal', <?php echo $app['id']; ?>, '<?php echo $app['status']; ?>', '<?php echo $app['response_date']; ?>', <?php echo json_encode($app['feedback']); ?>, '', '', '', '')">
-                                                                                                                Update
-                                                                                                            </button>
-                                                                                                        </td>
-                                                                                                    </tr>
-                                                                                                <?php endforeach; ?>
-                                                                                            </tbody>
-                                                                                        </table>
-                                                                                    </div>
+                                                                                <div class="mb-4">
+                                                                                    <h6 class="mb-3">
+                                                                                        <i class="bx bx-book-open text-info me-2"></i>Journal Applications
+                                                                                    </h6>
+                                                                                    <?php foreach ($journal_applications as $app): ?>
+                                                                                        <div class="card mb-3">
+                                                                                            <div class="card-body">
+                                                                                                <div class="row align-items-center">
+                                                                                                    <div class="col-md-5">
+                                                                                                        <h6 class="mb-1"><?php echo htmlspecialchars($app['journal_name']); ?></h6>
+                                                                                                        <small class="text-muted">
+                                                                                                            <?php echo htmlspecialchars($app['publisher']); ?> • Applied: <?php echo date('M d, Y', strtotime($app['application_date'])); ?>
+                                                                                                        </small>
+                                                                                                    </div>
+                                                                                                    <div class="col-md-3">
+                                                                                                        <?php
+                                                                                                        $status_class = 'secondary';
+                                                                                                        if ($app['status'] == 'accepted') $status_class = 'success';
+                                                                                                        elseif ($app['status'] == 'rejected') $status_class = 'danger';
+                                                                                                        elseif ($app['status'] == 'under_review') $status_class = 'warning';
+                                                                                                        ?>
+                                                                                                        <span class="badge bg-<?php echo $status_class; ?> fs-6"><?php echo ucfirst(str_replace('_', ' ', $app['status'])); ?></span>
+                                                                                                        <?php if ($app['manuscript_id']): ?>
+                                                                                                            <br><small class="text-muted">ID: <?php echo htmlspecialchars($app['manuscript_id']); ?></small>
+                                                                                                        <?php endif; ?>
+                                                                                                    </div>
+                                                                                                    <div class="col-md-4 text-end">
+                                                                                                        <button class="btn btn-sm btn-outline-primary update-status-btn" 
+                                                                                                               data-bs-toggle="modal" 
+                                                                                                               data-bs-target="#updateStatusModal"
+                                                                                                               data-type="journal"
+                                                                                                               data-id="<?php echo $app['id']; ?>"
+                                                                                                               data-status="<?php echo htmlspecialchars($app['status']); ?>"
+                                                                                                               data-response-date="<?php echo htmlspecialchars($app['response_date'] ?? ''); ?>"
+                                                                                                               data-feedback="<?php echo htmlspecialchars($app['feedback'] ?? ''); ?>">
+                                                                                                            <i class="bx bx-edit me-1"></i>Update
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    <?php endforeach; ?>
+                                                                                </div>
+                                                                            <?php endif; ?>
+                                                                            
+                                                                            <?php if (empty($conf_applications) && empty($journal_applications)): ?>
+                                                                                <div class="text-center py-4">
+                                                                                    <i class="bx bx-send display-4 text-muted"></i>
+                                                                                    <h6 class="mt-2 text-muted">No Applications Yet</h6>
+                                                                                    <p class="text-muted small">Use the Apply button to submit this publication to conferences or journals.</p>
                                                                                 </div>
                                                                             <?php endif; ?>
                                                                         </div>
-                                                                    <?php endif; ?>
+                                                                    </div>
                                                                 </div>
                                                             </td>
                                                         </tr>
@@ -810,6 +982,27 @@ $current_user = $_SESSION;
                                     <small class="text-muted">Link to the PowerPoint presentation</small>
                                 </div>
                             </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Conference Attended</label>
+                                    <select class="form-select" id="modal_attended" name="attended">
+                                        <option value="">Not specified</option>
+                                        <option value="1">Yes, attended</option>
+                                        <option value="0">No, did not attend</option>
+                                    </select>
+                                    <small class="text-muted">Did you attend the conference?</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Certificate Received</label>
+                                    <select class="form-select" id="modal_certificate_received" name="certificate_received">
+                                        <option value="">Not specified</option>
+                                        <option value="1">Yes, received</option>
+                                        <option value="0">No, not received</option>
+                                    </select>
+                                    <small class="text-muted">Did you receive the certificate?</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -863,28 +1056,51 @@ $current_user = $_SESSION;
             document.getElementById('modal_reviewer_changes').value = '';
             document.getElementById('modal_formatted_paper_link').value = '';
             document.getElementById('modal_presentation_link').value = '';
+            document.getElementById('modal_attended').value = '';
+            document.getElementById('modal_certificate_received').value = '';
             
             // Show/hide acceptance fields based on current status and type
             toggleAcceptanceFields();
         }
 
-        // Function to populate status update modal with existing data
-        function setStatusUpdateWithData(type, applicationId, currentStatus, responseDate, feedback, acceptanceDate, reviewerChanges, formattedPaperLink, presentationLink) {
-            document.getElementById('modal_application_id').value = applicationId;
-            document.getElementById('modal_application_type').value = type;
-            document.getElementById('modal_status').value = currentStatus;
-            document.getElementById('modal_response_date').value = responseDate || '';
-            document.getElementById('modal_feedback').value = feedback || '';
-            
-            // Populate acceptance fields if they exist
-            if (acceptanceDate) document.getElementById('modal_acceptance_date').value = acceptanceDate;
-            if (reviewerChanges) document.getElementById('modal_reviewer_changes').value = reviewerChanges;
-            if (formattedPaperLink) document.getElementById('modal_formatted_paper_link').value = formattedPaperLink;
-            if (presentationLink) document.getElementById('modal_presentation_link').value = presentationLink;
-            
-            // Show/hide acceptance fields based on current status and type
-            toggleAcceptanceFields();
-        }
+        // Event handler for update status buttons using data attributes
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle update status button clicks
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.update-status-btn')) {
+                    const btn = e.target.closest('.update-status-btn');
+                    const data = btn.dataset;
+                    
+                    // Set modal fields
+                    document.getElementById('modal_application_id').value = data.id;
+                    document.getElementById('modal_application_type').value = data.type;
+                    document.getElementById('modal_status').value = data.status;
+                    document.getElementById('modal_response_date').value = data.responseDate || '';
+                    document.getElementById('modal_feedback').value = data.feedback || '';
+                    
+                    // Conference-specific fields
+                    if (data.type === 'conference') {
+                        document.getElementById('modal_acceptance_date').value = data.acceptanceDate || '';
+                        document.getElementById('modal_reviewer_changes').value = data.reviewerChanges || '';
+                        document.getElementById('modal_formatted_paper_link').value = data.formattedPaperLink || '';
+                        document.getElementById('modal_presentation_link').value = data.presentationLink || '';
+                        document.getElementById('modal_attended').value = data.attended || '';
+                        document.getElementById('modal_certificate_received').value = data.certificateReceived || '';
+                    } else {
+                        // Clear conference-specific fields for journals
+                        document.getElementById('modal_acceptance_date').value = '';
+                        document.getElementById('modal_reviewer_changes').value = '';
+                        document.getElementById('modal_formatted_paper_link').value = '';
+                        document.getElementById('modal_presentation_link').value = '';
+                        document.getElementById('modal_attended').value = '';
+                        document.getElementById('modal_certificate_received').value = '';
+                    }
+                    
+                    // Show/hide acceptance fields based on current status and type
+                    toggleAcceptanceFields();
+                }
+            });
+        });
 
         // Add hover effect to table rows
         document.addEventListener('DOMContentLoaded', function() {

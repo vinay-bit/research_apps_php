@@ -278,7 +278,21 @@ class InPublication {
     
     // Get conference applications for a publication
     public function getConferenceApplications($in_publication_id) {
-        $query = "SELECT pca.*, c.conference_name, c.conference_shortform, c.conference_date, 
+        // First check if the new columns exist
+        $check_query = "SHOW COLUMNS FROM " . $this->conf_applications_table . " LIKE 'attended'";
+        $check_stmt = $this->conn->prepare($check_query);
+        $check_stmt->execute();
+        $attended_exists = $check_stmt->rowCount() > 0;
+        
+        // Build query with conditional column selection
+        $attended_col = $attended_exists ? ", pca.attended, pca.certificate_received" : ", NULL as attended, NULL as certificate_received";
+        
+        $query = "SELECT pca.id, pca.in_publication_id, pca.conference_id, pca.application_date, 
+                         pca.submission_deadline, pca.submission_link, pca.status, pca.response_date,
+                         pca.feedback, pca.notes, pca.acceptance_date, pca.reviewer_changes,
+                         pca.formatted_paper_link, pca.presentation_link, pca.created_at, pca.updated_at
+                         $attended_col,
+                         c.conference_name, c.conference_shortform, c.conference_date, 
                          c.affiliation, c.conference_type
                   FROM " . $this->conf_applications_table . " pca
                   INNER JOIN conferences c ON pca.conference_id = c.id
@@ -309,12 +323,29 @@ class InPublication {
     
     // Update conference application status
     public function updateConferenceApplication($application_id, $data) {
-        $query = "UPDATE " . $this->conf_applications_table . " 
-                  SET status = :status, feedback = :feedback, response_date = :response_date,
-                      acceptance_date = :acceptance_date, reviewer_changes = :reviewer_changes,
-                      formatted_paper_link = :formatted_paper_link, presentation_link = :presentation_link,
-                      updated_at = CURRENT_TIMESTAMP
-                  WHERE id = :id";
+        // Check if the new columns exist
+        $check_query = "SHOW COLUMNS FROM " . $this->conf_applications_table . " LIKE 'attended'";
+        $check_stmt = $this->conn->prepare($check_query);
+        $check_stmt->execute();
+        $attended_exists = $check_stmt->rowCount() > 0;
+        
+        // Build query with conditional columns
+        if ($attended_exists) {
+            $query = "UPDATE " . $this->conf_applications_table . " 
+                      SET status = :status, feedback = :feedback, response_date = :response_date,
+                          acceptance_date = :acceptance_date, reviewer_changes = :reviewer_changes,
+                          formatted_paper_link = :formatted_paper_link, presentation_link = :presentation_link,
+                          attended = :attended, certificate_received = :certificate_received,
+                          updated_at = CURRENT_TIMESTAMP
+                      WHERE id = :id";
+        } else {
+            $query = "UPDATE " . $this->conf_applications_table . " 
+                      SET status = :status, feedback = :feedback, response_date = :response_date,
+                          acceptance_date = :acceptance_date, reviewer_changes = :reviewer_changes,
+                          formatted_paper_link = :formatted_paper_link, presentation_link = :presentation_link,
+                          updated_at = CURRENT_TIMESTAMP
+                      WHERE id = :id";
+        }
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $application_id);
@@ -325,6 +356,12 @@ class InPublication {
         $stmt->bindValue(':reviewer_changes', $data['reviewer_changes'] ?? null);
         $stmt->bindValue(':formatted_paper_link', $data['formatted_paper_link'] ?? null);
         $stmt->bindValue(':presentation_link', $data['presentation_link'] ?? null);
+        
+        // Only bind new parameters if columns exist
+        if ($attended_exists) {
+            $stmt->bindValue(':attended', $data['attended'] ?? null);
+            $stmt->bindValue(':certificate_received', $data['certificate_received'] ?? null);
+        }
         
         return $stmt->execute();
     }
