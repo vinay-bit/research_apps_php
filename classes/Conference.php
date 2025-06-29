@@ -72,8 +72,8 @@ class Conference {
     // Create new conference
     public function create($data) {
         $query = "INSERT INTO " . $this->table_name . " 
-                  (conference_name, conference_shortform, conference_link, affiliation, conference_type, conference_date, created_by) 
-                  VALUES (:name, :shortform, :link, :affiliation, :type, :date, :created_by)";
+                  (conference_name, conference_shortform, conference_link, affiliation, conference_type, conference_date, submission_due_date, created_by) 
+                  VALUES (:name, :shortform, :link, :affiliation, :type, :date, :submission_due_date, :created_by)";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':name', $data['conference_name']);
@@ -82,6 +82,7 @@ class Conference {
         $stmt->bindParam(':affiliation', $data['affiliation']);
         $stmt->bindParam(':type', $data['conference_type']);
         $stmt->bindParam(':date', $data['conference_date']);
+        $stmt->bindValue(':submission_due_date', $data['submission_due_date'] ?? null);
         $stmt->bindParam(':created_by', $data['created_by']);
         
         if ($stmt->execute()) {
@@ -99,6 +100,7 @@ class Conference {
                       affiliation = :affiliation,
                       conference_type = :type,
                       conference_date = :date,
+                      submission_due_date = :submission_due_date,
                       updated_at = CURRENT_TIMESTAMP
                   WHERE id = :id";
         
@@ -110,6 +112,7 @@ class Conference {
         $stmt->bindParam(':affiliation', $data['affiliation']);
         $stmt->bindParam(':type', $data['conference_type']);
         $stmt->bindParam(':date', $data['conference_date']);
+        $stmt->bindValue(':submission_due_date', $data['submission_due_date'] ?? null);
         
         return $stmt->execute();
     }

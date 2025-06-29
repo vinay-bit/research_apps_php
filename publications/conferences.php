@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_conference'])) {
             'affiliation' => $_POST['affiliation'],
             'conference_type' => $_POST['conference_type'],
             'conference_date' => $_POST['conference_date'],
+            'submission_due_date' => !empty($_POST['submission_due_date']) ? $_POST['submission_due_date'] : null,
             'created_by' => $_SESSION['user_id']
         ];
         
@@ -47,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_conference'])) 
             'conference_link' => trim($_POST['conference_link']),
             'affiliation' => $_POST['affiliation'],
             'conference_type' => $_POST['conference_type'],
-            'conference_date' => $_POST['conference_date']
+            'conference_date' => $_POST['conference_date'],
+            'submission_due_date' => !empty($_POST['submission_due_date']) ? $_POST['submission_due_date'] : null
         ];
         
         if ($conference->update($conference_id, $data)) {
@@ -315,6 +317,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                                             <th>Affiliation</th>
                                             <th>Type</th>
                                             <th>Date</th>
+                                            <th>Submission Due</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
@@ -322,7 +325,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                                     <tbody class="table-border-bottom-0">
                                         <?php if (empty($conferences)): ?>
                                             <tr>
-                                                <td colspan="6" class="text-center py-4">
+                                                <td colspan="7" class="text-center py-4">
                                                     <div class="empty-state">
                                                         <i class="bx bx-calendar-x display-4 text-muted"></i>
                                                         <h5 class="mt-2">No conferences found</h5>
@@ -380,6 +383,34 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                                                     <td>
                                                         <strong><?php echo date('M d, Y', strtotime($conf['conference_date'])); ?></strong>
                                                         <br><small class="text-muted"><?php echo date('l', strtotime($conf['conference_date'])); ?></small>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($conf['submission_due_date']): ?>
+                                                            <strong><?php echo date('M d, Y', strtotime($conf['submission_due_date'])); ?></strong>
+                                                            <br>
+                                                            <?php 
+                                                            $due_date = strtotime($conf['submission_due_date']);
+                                                            $today = strtotime('today');
+                                                            $days_diff = floor(($due_date - $today) / (60 * 60 * 24));
+                                                            
+                                                            if ($days_diff > 0): ?>
+                                                                <small class="text-success">
+                                                                    <i class="bx bx-time me-1"></i><?php echo $days_diff; ?> days left
+                                                                </small>
+                                                            <?php elseif ($days_diff == 0): ?>
+                                                                <small class="text-warning">
+                                                                    <i class="bx bx-alarm me-1"></i>Due today
+                                                                </small>
+                                                            <?php else: ?>
+                                                                <small class="text-danger">
+                                                                    <i class="bx bx-x me-1"></i>Overdue
+                                                                </small>
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">
+                                                                <i class="bx bx-minus me-1"></i>Not set
+                                                            </span>
+                                                        <?php endif; ?>
                                                     </td>
                                                     <td>
                                                         <?php if ($is_upcoming): ?>
@@ -493,9 +524,17 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Conference Date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" name="conference_date" required>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Conference Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="conference_date" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Submission Due Date</label>
+                                <input type="date" class="form-control" name="submission_due_date" 
+                                       placeholder="Paper submission deadline">
+                                <small class="text-muted">Deadline for paper submissions</small>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -566,10 +605,18 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Conference Date <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" name="conference_date" required 
-                                   value="<?php echo $edit_conference['conference_date']; ?>">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Conference Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="conference_date" required 
+                                       value="<?php echo $edit_conference['conference_date']; ?>">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Submission Due Date</label>
+                                <input type="date" class="form-control" name="submission_due_date" 
+                                       value="<?php echo htmlspecialchars($edit_conference['submission_due_date'] ?? ''); ?>">
+                                <small class="text-muted">Deadline for paper submissions</small>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
