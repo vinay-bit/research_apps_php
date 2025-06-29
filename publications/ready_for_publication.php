@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_manual'])) {
             'mentor_affiliation' => trim($_POST['mentor_affiliation']),
             'first_draft_link' => trim($_POST['first_draft_link']),
             'plagiarism_report_link' => trim($_POST['plagiarism_report_link']),
+            'ai_detection_link' => trim($_POST['ai_detection_link']),
             'status' => $_POST['publication_status'],
             'notes' => trim($_POST['notes']),
             'students' => []
@@ -40,6 +41,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_manual'])) {
         
         $publication_id = $readyForPublication->createManual($data);
         $message = "Publication entry created successfully!";
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
+// Handle move to in-publication request
+if (isset($_GET['move_to_publication']) && is_numeric($_GET['move_to_publication'])) {
+    try {
+        require_once '../classes/InPublication.php';
+        $inPublication = new InPublication();
+        $publication_id = intval($_GET['move_to_publication']);
+        $in_pub_id = $inPublication->moveFromReadyForPublication($publication_id);
+        $message = "Publication successfully moved to In Publication workflow!";
     } catch (Exception $e) {
         $error = $e->getMessage();
     }
@@ -420,6 +434,12 @@ $current_user = $_SESSION;
                                                                 <a class="dropdown-item" href="edit_ready_publication.php?id=<?php echo $pub['id']; ?>">
                                                                     <i class="bx bx-edit me-1"></i> Edit Details
                                                                 </a>
+                                                                <?php if ($pub['status'] == 'approved' && !empty($pub['first_draft_link']) && !empty($pub['ai_detection_link'])): ?>
+                                                                    <div class="dropdown-divider"></div>
+                                                                    <a class="dropdown-item text-success" href="?move_to_publication=<?php echo $pub['id']; ?>" onclick="return confirm('Move this publication to In Publication workflow?')">
+                                                                        <i class="bx bx-right-arrow me-1"></i> Move to In Publication
+                                                                    </a>
+                                                                <?php endif; ?>
                                                                 <div class="dropdown-divider"></div>
                                                                 <?php if (hasPermission('admin')): ?>
                                                                 <a class="dropdown-item text-danger" href="?delete=<?php echo $pub['id']; ?>" onclick="return confirm('Are you sure you want to remove this from ready for publication list?')">
@@ -556,6 +576,13 @@ $current_user = $_SESSION;
                                        placeholder="https://drive.google.com/...">
                                 <div class="form-text">Link to the plagiarism check report</div>
                             </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">AI Detection Link <span class="text-danger">*</span></label>
+                            <input type="url" class="form-control" name="ai_detection_link" 
+                                   placeholder="https://drive.google.com/...">
+                            <div class="form-text">Link to AI detection report (required for approval status)</div>
                         </div>
                         
                         <div class="mb-3">

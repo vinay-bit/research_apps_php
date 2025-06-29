@@ -146,6 +146,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </a>
         </li>
         
+        <li class="menu-item <?php echo ($current_page == 'in_publication.php') ? 'active' : ''; ?>">
+            <a href="/publications/in_publication.php" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-paper-plane"></i>
+                <div data-i18n="In Publication">In Publication</div>
+            </a>
+        </li>
+        
         <li class="menu-item <?php echo ($current_page == 'conferences.php') ? 'active' : ''; ?>">
             <a href="/publications/conferences.php" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-calendar-event"></i>

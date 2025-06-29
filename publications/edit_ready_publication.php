@@ -43,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'mentor_affiliation' => trim($_POST['mentor_affiliation']),
                 'first_draft_link' => trim($_POST['first_draft_link']),
                 'plagiarism_report_link' => trim($_POST['plagiarism_report_link']),
+                'ai_detection_link' => trim($_POST['ai_detection_link']),
                 'status' => $_POST['status'],
                 'notes' => trim($_POST['notes'])
             ];
@@ -208,6 +209,11 @@ $current_user = $_SESSION;
                                                     <label class="form-label">Plagiarism Report Link</label>
                                                     <input type="url" class="form-control" name="plagiarism_report_link" value="<?php echo htmlspecialchars($publication['plagiarism_report_link']); ?>" placeholder="https://drive.google.com/...">
                                                     <div class="form-text">Link to the plagiarism check report</div>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">AI Detection Link <span class="text-danger">*</span></label>
+                                                    <input type="url" class="form-control" name="ai_detection_link" value="<?php echo htmlspecialchars($publication['ai_detection_link']); ?>" placeholder="https://drive.google.com/...">
+                                                    <div class="form-text">Link to AI detection report (required for approval)</div>
                                                 </div>
                                                 <div class="col-12 mb-3">
                                                     <label class="form-label">Notes</label>
