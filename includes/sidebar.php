@@ -133,25 +133,31 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </li>
             </ul>
         </li>
+
+        <!-- Research & Publications -->
+        <li class="menu-header small text-uppercase">
+            <span class="menu-header-text">Research & Publications</span>
+        </li>
         
-        <!-- Publications -->
-        <li class="menu-item <?php echo (strpos($current_page, 'publication') !== false) ? 'active open' : ''; ?>">
-            <a href="javascript:void(0);" class="menu-link menu-toggle">
-                <i class="menu-icon tf-icons bx bx-book"></i>
-                <div data-i18n="Publications">Publications</div>
+        <li class="menu-item <?php echo ($current_page == 'ready_for_publication.php') ? 'active' : ''; ?>">
+            <a href="/publications/ready_for_publication.php" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-book-open"></i>
+                <div data-i18n="Ready for Publication">Ready for Publication</div>
             </a>
-            <ul class="menu-sub">
-                <li class="menu-item <?php echo ($current_page == 'list.php' && strpos($_SERVER['REQUEST_URI'], 'publications') !== false) ? 'active' : ''; ?>">
-                    <a href="/publications/list.php" class="menu-link">
-                        <div data-i18n="All Publications">All Publications</div>
-                    </a>
-                </li>
-                <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'publications') !== false) ? 'active' : ''; ?>">
-                    <a href="/publications/create.php" class="menu-link">
-                        <div data-i18n="Create Publication">Create Publication</div>
+        </li>
+        
+        <li class="menu-item <?php echo ($current_page == 'conferences.php') ? 'active' : ''; ?>">
+            <a href="/publications/conferences.php" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-calendar-event"></i>
+                <div data-i18n="Conferences">Conference Management</div>
             </a>
-                </li>
-            </ul>
+        </li>
+        
+        <li class="menu-item <?php echo ($current_page == 'journals.php') ? 'active' : ''; ?>">
+            <a href="/publications/journals.php" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-book-open"></i>
+                <div data-i18n="Journals">Journal Management</div>
+            </a>
         </li>
         
 

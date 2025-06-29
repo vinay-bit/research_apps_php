@@ -57,6 +57,39 @@ $query = "SELECT COUNT(*) as count FROM projects p
 $stmt = $db->prepare($query);
 $stmt->execute();
 $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+// Ready for Publication statistics (with error handling)
+try {
+    // Total ready for publication entries
+    $query = "SELECT COUNT(*) as count FROM ready_for_publication";
+    $stmt = $db->prepare($query);
+    $stmt->execute();
+    $total_ready_publications = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+    // Under review publications (in_review status)
+    $query = "SELECT COUNT(*) as count FROM ready_for_publication WHERE status = 'in_review'";
+    $stmt = $db->prepare($query);
+    $stmt->execute();
+    $under_review_publications = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+    // Approved publications ready for submission
+    $query = "SELECT COUNT(*) as count FROM ready_for_publication WHERE status = 'approved'";
+    $stmt = $db->prepare($query);
+    $stmt->execute();
+    $approved_publications = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+    // Published count
+    $query = "SELECT COUNT(*) as count FROM ready_for_publication WHERE status = 'published'";
+    $stmt = $db->prepare($query);
+    $stmt->execute();
+    $published_count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+} catch (PDOException $e) {
+    // If table doesn't exist yet, set defaults
+    $total_ready_publications = 0;
+    $under_review_publications = 0;
+    $approved_publications = 0;
+    $published_count = 0;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="Apps/assets/" data-template="vertical-menu-template-free">
@@ -124,7 +157,8 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                                     Use the navigation menu to manage users, students, projects, and access our research management platform.
                                                 </p>
                                                 <a href="/projects/list.php" class="btn btn-sm btn-primary me-2">View Projects</a>
-                                                <a href="/users/list.php" class="btn btn-sm btn-outline-primary me-2">View Users</a>
+                                                <a href="/publications/ready_for_publication.php" class="btn btn-sm btn-outline-primary me-2">Publications</a>
+                                                <a href="/users/list.php" class="btn btn-sm btn-outline-secondary me-2">View Users</a>
                                                 <a href="/students/list.php" class="btn btn-sm btn-outline-secondary">View Students</a>
                                             </div>
                                         </div>
@@ -259,6 +293,126 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                             </div>
                         </div>
 
+                        <!-- Publication Statistics Cards -->
+                        <div class="row">
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-0 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">Ready for Publication</h5>
+                                                    <span class="badge bg-label-primary rounded-pill">Total Entries</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0"><?php echo $total_ready_publications; ?></h3>
+                                                    <small class="text-primary fw-semibold">
+                                                        <i class="bx bx-book-open"></i> 
+                                                        <a href="/publications/ready_for_publication.php" class="text-primary">View All</a>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="avatar flex-shrink-0">
+                                                <span class="avatar-initial rounded bg-label-primary">
+                                                    <i class="bx bx-file-blank"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-1 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">Under Review</h5>
+                                                    <span class="badge bg-label-info rounded-pill">In Progress</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0"><?php echo $under_review_publications; ?></h3>
+                                                    <small class="text-info fw-semibold">
+                                                        <i class="bx bx-search"></i> 
+                                                        <?php if ($under_review_publications > 0): ?>
+                                                            <a href="/publications/ready_for_publication.php?status=in_review" class="text-info">View Reviews</a>
+                                                        <?php else: ?>
+                                                            None in review
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="avatar flex-shrink-0">
+                                                <span class="avatar-initial rounded bg-info">
+                                                    <i class="bx bx-search-alt-2"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-2 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">Approved</h5>
+                                                    <span class="badge bg-label-success rounded-pill">Ready to Submit</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0 text-success"><?php echo $approved_publications; ?></h3>
+                                                    <small class="text-success fw-semibold">
+                                                        <i class="bx bx-check-circle"></i> 
+                                                        <?php if ($approved_publications > 0): ?>
+                                                            <a href="/publications/ready_for_publication.php?status=approved" class="text-success">View Approved</a>
+                                                        <?php else: ?>
+                                                            None approved
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="avatar flex-shrink-0">
+                                                <span class="avatar-initial rounded bg-success">
+                                                    <i class="bx bx-check-circle"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-lg-3 col-xl-3 order-3 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-sm-row flex-column gap-3">
+                                            <div class="d-flex flex-sm-column flex-row align-items-start justify-content-between">
+                                                <div class="card-title">
+                                                    <h5 class="text-nowrap mb-2">Published</h5>
+                                                    <span class="badge bg-label-warning rounded-pill">Completed</span>
+                                                </div>
+                                                <div class="mt-sm-auto">
+                                                    <h3 class="mb-0 text-warning"><?php echo $published_count; ?></h3>
+                                                    <small class="text-warning fw-semibold">
+                                                        <i class="bx bx-trophy"></i> 
+                                                        <?php if ($published_count > 0): ?>
+                                                            <a href="/publications/ready_for_publication.php?status=published" class="text-warning">View Published</a>
+                                                        <?php else: ?>
+                                                            None published yet
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="avatar flex-shrink-0">
+                                                <span class="avatar-initial rounded bg-warning">
+                                                    <i class="bx bx-trophy"></i>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- User Statistics Cards -->
                         <div class="row">
                             <div class="col-md-3 col-lg-3 col-xl-3 order-0 mb-4">
@@ -371,12 +525,12 @@ $approaching_deadlines = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
                                         </div>
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="avatar me-3">
-                                                <span class="avatar-initial rounded bg-label-success"><i class="bx bx-briefcase"></i></span>
+                                                <span class="avatar-initial rounded bg-label-success"><i class="bx bx-book-open"></i></span>
                                             </div>
                                             <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
                                                 <div class="me-2">
-                                                    <h6 class="mb-0">RBM User Type</h6>
-                                                    <small class="text-muted">Research Branch Manager user type added successfully</small>
+                                                    <h6 class="mb-0">Ready for Publication System</h6>
+                                                    <small class="text-muted">Publication tracking with draft links and plagiarism reports implemented</small>
                                                 </div>
                                                 <div class="user-progress d-flex align-items-center gap-1">
                                                     <span class="badge bg-label-success">Completed</span>

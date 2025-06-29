@@ -37,7 +37,7 @@ class Database {
     }
 }
 
-/**
+/** 
  * DEPLOYMENT INSTRUCTIONS:
  * 
  * 1. Rename this file to 'database.php' after updating credentials
