@@ -62,14 +62,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['apply_journal'])) {
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
     try {
         $application_id = intval($_POST['application_id']);
-        $status = $_POST['status'];
-        $feedback = trim($_POST['feedback']);
-        $response_date = !empty($_POST['response_date']) ? $_POST['response_date'] : null;
+        $data = [
+            'status' => $_POST['status'],
+            'feedback' => trim($_POST['feedback']),
+            'response_date' => !empty($_POST['response_date']) ? $_POST['response_date'] : null
+        ];
         
+        // For conferences, include acceptance fields if status is accepted
         if ($_POST['application_type'] == 'conference') {
-            $success = $inPublication->updateConferenceApplication($application_id, $status, $feedback, $response_date);
+            if ($data['status'] == 'accepted') {
+                $data['acceptance_date'] = !empty($_POST['acceptance_date']) ? $_POST['acceptance_date'] : null;
+                $data['reviewer_changes'] = trim($_POST['reviewer_changes']);
+                $data['formatted_paper_link'] = trim($_POST['formatted_paper_link']);
+                $data['presentation_link'] = trim($_POST['presentation_link']);
+            }
+            $success = $inPublication->updateConferenceApplication($application_id, $data);
         } else {
-            $success = $inPublication->updateJournalApplication($application_id, $status, $feedback, $response_date);
+            $success = $inPublication->updateJournalApplication($application_id, $data);
         }
         
         if ($success) {
@@ -494,14 +503,37 @@ $current_user = $_SESSION;
                                                                                                             elseif ($app['status'] == 'under_review') $status_class = 'warning';
                                                                                                             ?>
                                                                                                             <span class="badge bg-<?php echo $status_class; ?>"><?php echo ucfirst(str_replace('_', ' ', $app['status'])); ?></span>
+                                                                                                            <?php if ($app['status'] == 'accepted' && $app['acceptance_date']): ?>
+                                                                                                                <br><small class="text-success">Accepted: <?php echo date('M d, Y', strtotime($app['acceptance_date'])); ?></small>
+                                                                                                            <?php endif; ?>
                                                                                                         </td>
                                                                                                         <td><?php echo date('M d, Y', strtotime($app['application_date'])); ?></td>
                                                                                                         <td>
-                                                                                                            <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal" onclick="setStatusUpdate('conference', <?php echo $app['id']; ?>, '<?php echo $app['status']; ?>')">
+                                                                                                            <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal" onclick="setStatusUpdateWithData('conference', <?php echo $app['id']; ?>, '<?php echo $app['status']; ?>', '<?php echo $app['response_date']; ?>', <?php echo json_encode($app['feedback']); ?>, '<?php echo $app['acceptance_date']; ?>', <?php echo json_encode($app['reviewer_changes']); ?>, '<?php echo $app['formatted_paper_link']; ?>', '<?php echo $app['presentation_link']; ?>')">
                                                                                                                 Update
                                                                                                             </button>
+                                                                                                            <?php if ($app['status'] == 'accepted'): ?>
+                                                                                                                <br>
+                                                                                                                <?php if ($app['formatted_paper_link']): ?>
+                                                                                                                    <a href="<?php echo htmlspecialchars($app['formatted_paper_link']); ?>" target="_blank" class="btn btn-xs btn-outline-success mt-1">
+                                                                                                                        <i class="bx bx-file me-1"></i>Paper
+                                                                                                                    </a>
+                                                                                                                <?php endif; ?>
+                                                                                                                <?php if ($app['presentation_link']): ?>
+                                                                                                                    <a href="<?php echo htmlspecialchars($app['presentation_link']); ?>" target="_blank" class="btn btn-xs btn-outline-warning mt-1">
+                                                                                                                        <i class="bx bx-slideshow me-1"></i>PPT
+                                                                                                                    </a>
+                                                                                                                <?php endif; ?>
+                                                                                                            <?php endif; ?>
                                                                                                         </td>
                                                                                                     </tr>
+                                                                                                    <?php if ($app['status'] == 'accepted' && $app['reviewer_changes']): ?>
+                                                                                                        <tr>
+                                                                                                            <td colspan="4" class="bg-light">
+                                                                                                                <small><strong>Reviewer Changes:</strong> <?php echo nl2br(htmlspecialchars($app['reviewer_changes'])); ?></small>
+                                                                                                            </td>
+                                                                                                        </tr>
+                                                                                                    <?php endif; ?>
                                                                                                 <?php endforeach; ?>
                                                                                             </tbody>
                                                                                         </table>
@@ -537,7 +569,7 @@ $current_user = $_SESSION;
                                                                                                         </td>
                                                                                                         <td><?php echo date('M d, Y', strtotime($app['application_date'])); ?></td>
                                                                                                         <td>
-                                                                                                            <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal" onclick="setStatusUpdate('journal', <?php echo $app['id']; ?>, '<?php echo $app['status']; ?>')">
+                                                                                                            <button class="btn btn-xs btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal" onclick="setStatusUpdateWithData('journal', <?php echo $app['id']; ?>, '<?php echo $app['status']; ?>', '<?php echo $app['response_date']; ?>', <?php echo json_encode($app['feedback']); ?>, '', '', '', '')">
                                                                                                                 Update
                                                                                                             </button>
                                                                                                         </td>
@@ -716,7 +748,7 @@ $current_user = $_SESSION;
     
     <!-- Update Status Modal -->
     <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form method="POST">
                     <div class="modal-header">
@@ -729,7 +761,7 @@ $current_user = $_SESSION;
                         
                         <div class="mb-3">
                             <label class="form-label">Status</label>
-                            <select class="form-select" id="modal_status" name="status" required>
+                            <select class="form-select" id="modal_status" name="status" required onchange="toggleAcceptanceFields()">
                                 <option value="applied">Applied</option>
                                 <option value="under_review">Under Review</option>
                                 <option value="accepted">Accepted</option>
@@ -746,6 +778,38 @@ $current_user = $_SESSION;
                         <div class="mb-3">
                             <label class="form-label">Feedback</label>
                             <textarea class="form-control" id="modal_feedback" name="feedback" rows="3" placeholder="Enter reviewer feedback or notes..."></textarea>
+                        </div>
+                        
+                        <!-- Conference Acceptance Fields (only shown when status is accepted and type is conference) -->
+                        <div id="acceptance_fields" style="display: none;">
+                            <hr class="my-3">
+                            <h6 class="text-success mb-3">
+                                <i class="bx bx-check-circle me-1"></i>Conference Acceptance Details
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Date of Acceptance</label>
+                                    <input type="date" class="form-control" id="modal_acceptance_date" name="acceptance_date">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Reviewer Changes</label>
+                                    <textarea class="form-control" id="modal_reviewer_changes" name="reviewer_changes" rows="2" placeholder="Required changes from reviewers..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Formatted Paper Link</label>
+                                    <input type="url" class="form-control" id="modal_formatted_paper_link" name="formatted_paper_link" placeholder="https://...">
+                                    <small class="text-muted">Link to the formatted/final version of the paper</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Presentation Link</label>
+                                    <input type="url" class="form-control" id="modal_presentation_link" name="presentation_link" placeholder="https://...">
+                                    <small class="text-muted">Link to the PowerPoint presentation</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -772,15 +836,54 @@ $current_user = $_SESSION;
             }
         }
 
+        // Function to toggle acceptance fields visibility
+        function toggleAcceptanceFields() {
+            const status = document.getElementById('modal_status').value;
+            const applicationType = document.getElementById('modal_application_type').value;
+            const acceptanceFields = document.getElementById('acceptance_fields');
+            
+            // Show acceptance fields only for conferences with accepted status
+            if (status === 'accepted' && applicationType === 'conference') {
+                acceptanceFields.style.display = 'block';
+            } else {
+                acceptanceFields.style.display = 'none';
+            }
+        }
+
         // Function to set status update modal data
         function setStatusUpdate(type, applicationId, currentStatus) {
             document.getElementById('modal_application_id').value = applicationId;
             document.getElementById('modal_application_type').value = type;
             document.getElementById('modal_status').value = currentStatus;
             
-            // Clear other fields
+            // Clear all fields
             document.getElementById('modal_response_date').value = '';
             document.getElementById('modal_feedback').value = '';
+            document.getElementById('modal_acceptance_date').value = '';
+            document.getElementById('modal_reviewer_changes').value = '';
+            document.getElementById('modal_formatted_paper_link').value = '';
+            document.getElementById('modal_presentation_link').value = '';
+            
+            // Show/hide acceptance fields based on current status and type
+            toggleAcceptanceFields();
+        }
+
+        // Function to populate status update modal with existing data
+        function setStatusUpdateWithData(type, applicationId, currentStatus, responseDate, feedback, acceptanceDate, reviewerChanges, formattedPaperLink, presentationLink) {
+            document.getElementById('modal_application_id').value = applicationId;
+            document.getElementById('modal_application_type').value = type;
+            document.getElementById('modal_status').value = currentStatus;
+            document.getElementById('modal_response_date').value = responseDate || '';
+            document.getElementById('modal_feedback').value = feedback || '';
+            
+            // Populate acceptance fields if they exist
+            if (acceptanceDate) document.getElementById('modal_acceptance_date').value = acceptanceDate;
+            if (reviewerChanges) document.getElementById('modal_reviewer_changes').value = reviewerChanges;
+            if (formattedPaperLink) document.getElementById('modal_formatted_paper_link').value = formattedPaperLink;
+            if (presentationLink) document.getElementById('modal_presentation_link').value = presentationLink;
+            
+            // Show/hide acceptance fields based on current status and type
+            toggleAcceptanceFields();
         }
 
         // Add hover effect to table rows

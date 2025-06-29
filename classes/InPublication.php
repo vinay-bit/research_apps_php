@@ -308,23 +308,29 @@ class InPublication {
     }
     
     // Update conference application status
-    public function updateConferenceApplication($application_id, $status, $feedback = null, $response_date = null) {
+    public function updateConferenceApplication($application_id, $data) {
         $query = "UPDATE " . $this->conf_applications_table . " 
                   SET status = :status, feedback = :feedback, response_date = :response_date,
+                      acceptance_date = :acceptance_date, reviewer_changes = :reviewer_changes,
+                      formatted_paper_link = :formatted_paper_link, presentation_link = :presentation_link,
                       updated_at = CURRENT_TIMESTAMP
                   WHERE id = :id";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $application_id);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':feedback', $feedback);
-        $stmt->bindParam(':response_date', $response_date);
+        $stmt->bindParam(':status', $data['status']);
+        $stmt->bindValue(':feedback', $data['feedback'] ?? null);
+        $stmt->bindValue(':response_date', $data['response_date'] ?? null);
+        $stmt->bindValue(':acceptance_date', $data['acceptance_date'] ?? null);
+        $stmt->bindValue(':reviewer_changes', $data['reviewer_changes'] ?? null);
+        $stmt->bindValue(':formatted_paper_link', $data['formatted_paper_link'] ?? null);
+        $stmt->bindValue(':presentation_link', $data['presentation_link'] ?? null);
         
         return $stmt->execute();
     }
     
     // Update journal application status
-    public function updateJournalApplication($application_id, $status, $feedback = null, $response_date = null) {
+    public function updateJournalApplication($application_id, $data) {
         $query = "UPDATE " . $this->journal_applications_table . " 
                   SET status = :status, feedback = :feedback, response_date = :response_date,
                       updated_at = CURRENT_TIMESTAMP
@@ -332,9 +338,9 @@ class InPublication {
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $application_id);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':feedback', $feedback);
-        $stmt->bindParam(':response_date', $response_date);
+        $stmt->bindParam(':status', $data['status']);
+        $stmt->bindValue(':feedback', $data['feedback'] ?? null);
+        $stmt->bindValue(':response_date', $data['response_date'] ?? null);
         
         return $stmt->execute();
     }
