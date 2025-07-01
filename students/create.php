@@ -26,18 +26,10 @@ while ($row = $rbm_stmt->fetch(PDO::FETCH_ASSOC)) {
 }
 
 // Get counselors for dropdown
-$counselor_stmt = $student->getCounselors();
-$counselors = [];
-while ($row = $counselor_stmt->fetch(PDO::FETCH_ASSOC)) {
-    $counselors[] = $row;
-}
+$counselors = $student->getCounselors();
 
 // Get boards for dropdown
-$board_stmt = $student->getBoards();
-$boards = [];
-while ($row = $board_stmt->fetch(PDO::FETCH_ASSOC)) {
-    $boards[] = $row;
-}
+$boards = $student->getBoards();
 
 // Handle form submission
 if ($_POST) {

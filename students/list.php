@@ -39,14 +39,14 @@ $filter_counselor = isset($_GET['counselor']) ? intval($_GET['counselor']) : 0;
 $filter_year = isset($_GET['year']) ? intval($_GET['year']) : 0;
 
 // Get students based on search and filters
-if (!empty($search_term)) {
-    $stmt = $student->search($search_term);
-} elseif ($filter_rbm > 0) {
-    $stmt = $student->getByRBM($filter_rbm);
-} elseif ($filter_counselor > 0) {
-    $stmt = $student->getByCounselor($filter_counselor);
-} elseif ($filter_year > 0) {
-    $stmt = $student->getByApplicationYear($filter_year);
+$filters = [];
+if (!empty($search_term)) $filters['search'] = $search_term;
+if ($filter_rbm > 0) $filters['rbm_id'] = $filter_rbm;
+if ($filter_counselor > 0) $filters['counselor_id'] = $filter_counselor;
+if ($filter_year > 0) $filters['application_year'] = $filter_year;
+
+if (!empty($filters)) {
+    $stmt = $student->getWithFilters($filters);
 } else {
     $stmt = $student->read();
 }
@@ -64,18 +64,10 @@ while ($row = $rbm_stmt->fetch(PDO::FETCH_ASSOC)) {
 }
 
 // Get counselors for filter dropdown
-$counselor_stmt = $student->getCounselors();
-$counselors = [];
-while ($row = $counselor_stmt->fetch(PDO::FETCH_ASSOC)) {
-    $counselors[] = $row;
-}
+$counselors = $student->getCounselors();
 
 // Get application years for filter dropdown
-$years_stmt = $student->getApplicationYears();
-$application_years = [];
-while ($row = $years_stmt->fetch(PDO::FETCH_ASSOC)) {
-    $application_years[] = $row;
-}
+$application_years = $student->getApplicationYears();
 
 $current_user = getCurrentUser();
 $page_title = "Student Management";

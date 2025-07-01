@@ -482,5 +482,59 @@ class Student {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    // Get students with multiple filters
+    public function getWithFilters($filters = []) {
+        $query = "SELECT s.*, 
+                         rbm.full_name as rbm_name, rbm.branch as rbm_branch,
+                         c.full_name as counselor_name, c.user_type as counselor_type,
+                         b.name as board_name
+                FROM " . $this->table_name . " s
+                LEFT JOIN users rbm ON s.rbm_id = rbm.id
+                LEFT JOIN users c ON s.counselor_id = c.id
+                LEFT JOIN boards b ON s.board_id = b.id
+                WHERE 1=1";
+        
+        $params = [];
+        
+        // Add search filter
+        if (!empty($filters['search'])) {
+            $query .= " AND (s.full_name LIKE :search OR s.student_id LIKE :search OR s.email_address LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        // Add RBM filter
+        if (!empty($filters['rbm_id'])) {
+            $query .= " AND s.rbm_id = :rbm_id";
+            $params[':rbm_id'] = $filters['rbm_id'];
+        }
+        
+        // Add counselor filter
+        if (!empty($filters['counselor_id'])) {
+            $query .= " AND s.counselor_id = :counselor_id";
+            $params[':counselor_id'] = $filters['counselor_id'];
+        }
+        
+        // Add application year filter
+        if (!empty($filters['application_year'])) {
+            $query .= " AND s.application_year = :application_year";
+            $params[':application_year'] = $filters['application_year'];
+        }
+        
+        // Add board filter
+        if (!empty($filters['board_id'])) {
+            $query .= " AND s.board_id = :board_id";
+            $params[':board_id'] = $filters['board_id'];
+        }
+        
+        $query .= " ORDER BY s.created_at DESC";
+        
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
+        return $stmt;
+    }
 }
 ?>
