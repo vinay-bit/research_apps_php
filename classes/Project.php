@@ -32,49 +32,81 @@ class Project {
     
     // Create new project
     public function create() {
-        $query = "INSERT INTO " . $this->table_name . " 
-                  SET project_name = :project_name,
-                      status_id = :status_id,
-                      lead_mentor_id = :lead_mentor_id,
-                      subject_id = :subject_id,
-                      has_prototype = :has_prototype,
-                      start_date = :start_date,
-                      end_date = :end_date,
-                      assigned_date = :assigned_date,
-                      completion_date = :completion_date,
-                      drive_link = :drive_link,
-                      rbm_id = :rbm_id,
-                      description = :description,
-                      notes = :notes";
-        
-        $stmt = $this->conn->prepare($query);
-        
-        // Sanitize input
-        $this->project_name = htmlspecialchars(strip_tags($this->project_name));
-        $this->drive_link = htmlspecialchars(strip_tags($this->drive_link));
-        $this->description = htmlspecialchars(strip_tags($this->description));
-        $this->notes = htmlspecialchars(strip_tags($this->notes));
-        
-        // Bind parameters
-        $stmt->bindParam(':project_name', $this->project_name);
-        $stmt->bindParam(':status_id', $this->status_id);
-        $stmt->bindParam(':lead_mentor_id', $this->lead_mentor_id);
-        $stmt->bindParam(':subject_id', $this->subject_id);
-        $stmt->bindParam(':has_prototype', $this->has_prototype);
-        $stmt->bindParam(':start_date', $this->start_date);
-        $stmt->bindParam(':end_date', $this->end_date);
-        $stmt->bindParam(':assigned_date', $this->assigned_date);
-        $stmt->bindParam(':completion_date', $this->completion_date);
-        $stmt->bindParam(':drive_link', $this->drive_link);
-        $stmt->bindParam(':rbm_id', $this->rbm_id);
-        $stmt->bindParam(':description', $this->description);
-        $stmt->bindParam(':notes', $this->notes);
-        
-        if ($stmt->execute()) {
-            $this->id = $this->conn->lastInsertId();
-            return true;
+        try {
+            $this->conn->beginTransaction();
+            
+            // Validate required fields
+            if (empty($this->project_name)) {
+                throw new Exception('Project name is required');
+            }
+            
+            // Validate foreign key references
+            if (!empty($this->status_id) && !$this->statusExists($this->status_id)) {
+                throw new Exception('Invalid status ID');
+            }
+            
+            if (!empty($this->lead_mentor_id) && !$this->mentorExists($this->lead_mentor_id)) {
+                throw new Exception('Invalid lead mentor ID');
+            }
+            
+            if (!empty($this->subject_id) && !$this->subjectExists($this->subject_id)) {
+                throw new Exception('Invalid subject ID');
+            }
+            
+            if (!empty($this->rbm_id) && !$this->rbmExists($this->rbm_id)) {
+                throw new Exception('Invalid RBM ID');
+            }
+            
+            $query = "INSERT INTO " . $this->table_name . " 
+                      SET project_name = :project_name,
+                          status_id = :status_id,
+                          lead_mentor_id = :lead_mentor_id,
+                          subject_id = :subject_id,
+                          has_prototype = :has_prototype,
+                          start_date = :start_date,
+                          end_date = :end_date,
+                          assigned_date = :assigned_date,
+                          completion_date = :completion_date,
+                          drive_link = :drive_link,
+                          rbm_id = :rbm_id,
+                          description = :description,
+                          notes = :notes";
+            
+            $stmt = $this->conn->prepare($query);
+            
+            // Sanitize input
+            $this->project_name = htmlspecialchars(strip_tags($this->project_name));
+            $this->drive_link = htmlspecialchars(strip_tags($this->drive_link));
+            $this->description = htmlspecialchars(strip_tags($this->description));
+            $this->notes = htmlspecialchars(strip_tags($this->notes));
+            
+            // Bind parameters
+            $stmt->bindParam(':project_name', $this->project_name);
+            $stmt->bindParam(':status_id', $this->status_id);
+            $stmt->bindParam(':lead_mentor_id', $this->lead_mentor_id);
+            $stmt->bindParam(':subject_id', $this->subject_id);
+            $stmt->bindParam(':has_prototype', $this->has_prototype);
+            $stmt->bindParam(':start_date', $this->start_date);
+            $stmt->bindParam(':end_date', $this->end_date);
+            $stmt->bindParam(':assigned_date', $this->assigned_date);
+            $stmt->bindParam(':completion_date', $this->completion_date);
+            $stmt->bindParam(':drive_link', $this->drive_link);
+            $stmt->bindParam(':rbm_id', $this->rbm_id);
+            $stmt->bindParam(':description', $this->description);
+            $stmt->bindParam(':notes', $this->notes);
+            
+            if ($stmt->execute()) {
+                $this->id = $this->conn->lastInsertId();
+                $this->conn->commit();
+                return true;
+            } else {
+                $this->conn->rollback();
+                return false;
+            }
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-        return false;
     }
     
     // Get all projects with related data
@@ -294,34 +326,54 @@ class Project {
         return $stmt->execute();
     }
     
-    // Assign students to project
+    // Assign students to project with better duplicate handling
     public function assignStudents($project_id, $student_ids) {
-        // First, remove existing assignments
-        $query = "DELETE FROM project_students WHERE project_id = :project_id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':project_id', $project_id);
-        $stmt->execute();
-        
-        // Add new assignments
-        if (!empty($student_ids)) {
-            $query = "INSERT INTO project_students (project_id, student_id) VALUES (:project_id, :student_id)";
-            $stmt = $this->conn->prepare($query);
+        try {
+            $this->conn->beginTransaction();
             
-            foreach ($student_ids as $student_id) {
-                $stmt->bindParam(':project_id', $project_id);
-                $stmt->bindParam(':student_id', $student_id);
-                $stmt->execute();
+            // Validate project exists
+            if (!$this->projectExists($project_id)) {
+                throw new Exception('Project does not exist');
             }
+            
+            // First, remove existing assignments
+            $query = "DELETE FROM project_students WHERE project_id = :project_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':project_id', $project_id);
+            $stmt->execute();
+            
+            // Add new assignments with validation
+            if (!empty($student_ids) && is_array($student_ids)) {
+                $query = "INSERT IGNORE INTO project_students (project_id, student_id, assigned_date, role, is_active) 
+                         SELECT :project_id, :student_id, CURDATE(), 'Team Member', 1
+                         FROM students WHERE id = :student_id";
+                $stmt = $this->conn->prepare($query);
+                
+                foreach ($student_ids as $student_id) {
+                    // Validate student exists before assignment
+                    if ($this->studentExists($student_id)) {
+                        $stmt->bindParam(':project_id', $project_id);
+                        $stmt->bindParam(':student_id', $student_id);
+                        $stmt->execute();
+                    }
+                }
+            }
+            
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-        return true;
     }
     
     // Get assigned students for a project
     public function getAssignedStudents($project_id) {
-        $query = "SELECT s.id, s.student_id, s.full_name, s.grade, s.email_address, ps.assigned_at
+        $query = "SELECT s.id, s.student_id, s.full_name, s.grade, s.email_address, 
+                         ps.assigned_date, ps.role, ps.is_active
                   FROM students s
                   JOIN project_students ps ON s.id = ps.student_id
-                  WHERE ps.project_id = :project_id
+                  WHERE ps.project_id = :project_id AND ps.is_active = 1
                   ORDER BY s.full_name";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':project_id', $project_id);
@@ -329,31 +381,50 @@ class Project {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    // Assign tags to project
+    // Assign tags to project with better duplicate handling
     public function assignTags($project_id, $tag_ids) {
-        // First, remove existing assignments
-        $query = "DELETE FROM project_tag_assignments WHERE project_id = :project_id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':project_id', $project_id);
-        $stmt->execute();
-        
-        // Add new assignments
-        if (!empty($tag_ids)) {
-            $query = "INSERT INTO project_tag_assignments (project_id, tag_id) VALUES (:project_id, :tag_id)";
-            $stmt = $this->conn->prepare($query);
+        try {
+            $this->conn->beginTransaction();
             
-            foreach ($tag_ids as $tag_id) {
-                $stmt->bindParam(':project_id', $project_id);
-                $stmt->bindParam(':tag_id', $tag_id);
-                $stmt->execute();
+            // Validate project exists
+            if (!$this->projectExists($project_id)) {
+                throw new Exception('Project does not exist');
             }
+            
+            // First, remove existing assignments
+            $query = "DELETE FROM project_tag_assignments WHERE project_id = :project_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':project_id', $project_id);
+            $stmt->execute();
+            
+            // Add new assignments with validation
+            if (!empty($tag_ids) && is_array($tag_ids)) {
+                $query = "INSERT IGNORE INTO project_tag_assignments (project_id, tag_id) 
+                         SELECT :project_id, :tag_id
+                         FROM project_tags WHERE id = :tag_id";
+                $stmt = $this->conn->prepare($query);
+                
+                foreach ($tag_ids as $tag_id) {
+                    // Validate tag exists before assignment
+                    if ($this->tagExists($tag_id)) {
+                        $stmt->bindParam(':project_id', $project_id);
+                        $stmt->bindParam(':tag_id', $tag_id);
+                        $stmt->execute();
+                    }
+                }
+            }
+            
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-        return true;
     }
     
     // Get assigned tags for a project
     public function getAssignedTags($project_id) {
-        $query = "SELECT t.id, t.tag_name, t.color
+        $query = "SELECT t.id, t.tag_name, t.tag_color as color
                   FROM project_tags t
                   JOIN project_tag_assignments pta ON t.id = pta.tag_id
                   WHERE pta.project_id = :project_id
@@ -419,39 +490,115 @@ class Project {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    // Assign mentors to project
+    // Assign mentors to project with better duplicate handling
     public function assignMentors($project_id, $mentor_ids) {
-        // First, remove existing assignments
-        $query = "DELETE FROM project_mentors WHERE project_id = :project_id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':project_id', $project_id);
-        $stmt->execute();
-        
-        // Add new assignments
-        if (!empty($mentor_ids)) {
-            $query = "INSERT INTO project_mentors (project_id, mentor_id) VALUES (:project_id, :mentor_id)";
-            $stmt = $this->conn->prepare($query);
+        try {
+            $this->conn->beginTransaction();
             
-            foreach ($mentor_ids as $mentor_id) {
-                $stmt->bindParam(':project_id', $project_id);
-                $stmt->bindParam(':mentor_id', $mentor_id);
-                $stmt->execute();
+            // Validate project exists
+            if (!$this->projectExists($project_id)) {
+                throw new Exception('Project does not exist');
             }
+            
+            // First, remove existing assignments
+            $query = "DELETE FROM project_mentors WHERE project_id = :project_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':project_id', $project_id);
+            $stmt->execute();
+            
+            // Add new assignments with validation
+            if (!empty($mentor_ids) && is_array($mentor_ids)) {
+                $query = "INSERT IGNORE INTO project_mentors (project_id, mentor_id, assigned_date, role, is_active) 
+                         SELECT :project_id, :mentor_id, CURDATE(), 'Mentor', 1
+                         FROM users WHERE id = :mentor_id AND user_type = 'mentor'";
+                $stmt = $this->conn->prepare($query);
+                
+                foreach ($mentor_ids as $mentor_id) {
+                    // Validate mentor exists and is of correct type
+                    if ($this->mentorExists($mentor_id)) {
+                        $stmt->bindParam(':project_id', $project_id);
+                        $stmt->bindParam(':mentor_id', $mentor_id);
+                        $stmt->execute();
+                    }
+                }
+            }
+            
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-        return true;
     }
     
     // Get assigned mentors for a project
     public function getAssignedMentors($project_id) {
-        $query = "SELECT u.id, u.full_name, u.specialization, pm.assigned_date
+        $query = "SELECT u.id, u.full_name, u.specialization, pm.assigned_date, pm.role
                   FROM users u
                   JOIN project_mentors pm ON u.id = pm.mentor_id
-                  WHERE pm.project_id = :project_id
+                  WHERE pm.project_id = :project_id AND pm.is_active = 1
                   ORDER BY u.full_name";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':project_id', $project_id);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Validation helper methods
+    private function projectExists($project_id) {
+        $query = "SELECT id FROM projects WHERE id = :project_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':project_id', $project_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    private function studentExists($student_id) {
+        $query = "SELECT id FROM students WHERE id = :student_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':student_id', $student_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    private function tagExists($tag_id) {
+        $query = "SELECT id FROM project_tags WHERE id = :tag_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':tag_id', $tag_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    private function mentorExists($mentor_id) {
+        $query = "SELECT id FROM users WHERE id = :mentor_id AND user_type = 'mentor' AND status = 'active' LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':mentor_id', $mentor_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    private function statusExists($status_id) {
+        $query = "SELECT id FROM project_statuses WHERE id = :status_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':status_id', $status_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    private function subjectExists($subject_id) {
+        $query = "SELECT id FROM subjects WHERE id = :subject_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':subject_id', $subject_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    private function rbmExists($rbm_id) {
+        $query = "SELECT id FROM users WHERE id = :rbm_id AND user_type = 'rbm' AND status = 'active' LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':rbm_id', $rbm_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
     }
     
     // Alias methods for edit.php compatibility

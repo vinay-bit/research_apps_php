@@ -19,80 +19,165 @@ class Student {
     public $created_at;
     public $updated_at;
 
-    public function __construct($db) {
-        $this->conn = $db;
+    public function __construct($db = null) {
+        if ($db) {
+            $this->conn = $db;
+        } else {
+            $database = new Database();
+            $this->conn = $database->getConnection();
+        }
     }
 
-    // Generate unique student ID
+    // Generate unique student ID with better duplicate prevention
     private function generateStudentId() {
         $year = date('Y');
         $prefix = 'STU' . $year;
+        $max_attempts = 100;
+        $attempt = 0;
         
-        // Get the last student ID for this year
-        $query = "SELECT student_id FROM " . $this->table_name . " 
-                 WHERE student_id LIKE ? 
-                 ORDER BY student_id DESC LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$prefix . '%']);
-        
-        if ($stmt->rowCount() > 0) {
-            $last_id = $stmt->fetch(PDO::FETCH_ASSOC)['student_id'];
-            $number = intval(substr($last_id, -4)) + 1;
-        } else {
-            $number = 1;
+        while ($attempt < $max_attempts) {
+            // Get the last student ID for this year with proper locking
+            $query = "SELECT student_id FROM " . $this->table_name . " 
+                     WHERE student_id LIKE ? 
+                     ORDER BY CAST(SUBSTRING(student_id, 8) AS UNSIGNED) DESC 
+                     LIMIT 1 FOR UPDATE";
+            
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([$prefix . '%']);
+            
+            if ($stmt->rowCount() > 0) {
+                $last_id = $stmt->fetch(PDO::FETCH_ASSOC)['student_id'];
+                $number = intval(substr($last_id, -4)) + 1;
+            } else {
+                $number = 1;
+            }
+            
+            $new_id = $prefix . str_pad($number, 4, '0', STR_PAD_LEFT);
+            
+            // Double-check this ID doesn't exist
+            if (!$this->studentIdExists($new_id)) {
+                return $new_id;
+            }
+            
+            $attempt++;
         }
         
-        return $prefix . str_pad($number, 4, '0', STR_PAD_LEFT);
+        throw new Exception('Unable to generate unique student ID after ' . $max_attempts . ' attempts');
     }
 
-    // Create student
+    // Check if student ID exists (improved with parameter)
+    public function studentIdExists($student_id = null) {
+        $check_id = $student_id ?? $this->student_id;
+        
+        $query = "SELECT id FROM " . $this->table_name . " WHERE student_id = :student_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':student_id', $check_id);
+        $stmt->execute();
+
+        return $stmt->rowCount() > 0;
+    }
+
+    // Create student with improved error handling
     public function create() {
-        // Generate student ID if not provided
-        if (empty($this->student_id)) {
-            $this->student_id = $this->generateStudentId();
+        try {
+            // Start transaction
+            $this->conn->beginTransaction();
+            
+            // Generate student ID if not provided
+            if (empty($this->student_id)) {
+                $this->student_id = $this->generateStudentId();
+            } else {
+                // If student_id is provided, check if it already exists
+                if ($this->studentIdExists()) {
+                    throw new Exception('Student ID already exists: ' . $this->student_id);
+                }
+            }
+            
+            // Validate required fields
+            if (empty($this->full_name)) {
+                throw new Exception('Full name is required');
+            }
+            
+            // Validate foreign key references
+            if (!empty($this->counselor_id) && !$this->userExists($this->counselor_id)) {
+                throw new Exception('Invalid counselor ID');
+            }
+            
+            if (!empty($this->rbm_id) && !$this->userExists($this->rbm_id)) {
+                throw new Exception('Invalid RBM ID');
+            }
+            
+            if (!empty($this->board_id) && !$this->boardExists($this->board_id)) {
+                throw new Exception('Invalid board ID');
+            }
+            
+            $query = "INSERT INTO " . $this->table_name . " 
+                    SET student_id=:student_id, full_name=:full_name, affiliation=:affiliation, 
+                        grade=:grade, counselor_id=:counselor_id, rbm_id=:rbm_id, board_id=:board_id,
+                        contact_no=:contact_no, email_address=:email_address, application_year=:application_year";
+
+            $stmt = $this->conn->prepare($query);
+
+            // Clean data
+            $this->full_name = htmlspecialchars(strip_tags($this->full_name));
+            $this->affiliation = htmlspecialchars(strip_tags($this->affiliation));
+            $this->grade = htmlspecialchars(strip_tags($this->grade));
+            $this->contact_no = htmlspecialchars(strip_tags($this->contact_no));
+            $this->email_address = htmlspecialchars(strip_tags($this->email_address));
+
+            // Bind data
+            $stmt->bindParam(":student_id", $this->student_id);
+            $stmt->bindParam(":full_name", $this->full_name);
+            $stmt->bindParam(":affiliation", $this->affiliation);
+            $stmt->bindParam(":grade", $this->grade);
+            $stmt->bindParam(":counselor_id", $this->counselor_id);
+            $stmt->bindParam(":rbm_id", $this->rbm_id);
+            $stmt->bindParam(":board_id", $this->board_id);
+            $stmt->bindParam(":contact_no", $this->contact_no);
+            $stmt->bindParam(":email_address", $this->email_address);
+            $stmt->bindParam(":application_year", $this->application_year);
+
+            if($stmt->execute()) {
+                $this->id = $this->conn->lastInsertId();
+                $this->conn->commit();
+                return true;
+            } else {
+                $this->conn->rollback();
+                return false;
+            }
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-        
-        $query = "INSERT INTO " . $this->table_name . " 
-                SET student_id=:student_id, full_name=:full_name, affiliation=:affiliation, 
-                    grade=:grade, counselor_id=:counselor_id, rbm_id=:rbm_id, board_id=:board_id,
-                    contact_no=:contact_no, email_address=:email_address, application_year=:application_year";
-
-        $stmt = $this->conn->prepare($query);
-
-        // Clean data
-        $this->full_name = htmlspecialchars(strip_tags($this->full_name));
-        $this->affiliation = htmlspecialchars(strip_tags($this->affiliation));
-        $this->grade = htmlspecialchars(strip_tags($this->grade));
-        $this->contact_no = htmlspecialchars(strip_tags($this->contact_no));
-        $this->email_address = htmlspecialchars(strip_tags($this->email_address));
-
-        // Bind data
-        $stmt->bindParam(":student_id", $this->student_id);
-        $stmt->bindParam(":full_name", $this->full_name);
-        $stmt->bindParam(":affiliation", $this->affiliation);
-        $stmt->bindParam(":grade", $this->grade);
-        $stmt->bindParam(":counselor_id", $this->counselor_id);
-        $stmt->bindParam(":rbm_id", $this->rbm_id);
-        $stmt->bindParam(":board_id", $this->board_id);
-        $stmt->bindParam(":contact_no", $this->contact_no);
-        $stmt->bindParam(":email_address", $this->email_address);
-        $stmt->bindParam(":application_year", $this->application_year);
-
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
     }
 
-    // Read all students
+    // Validate user exists
+    private function userExists($user_id) {
+        $query = "SELECT id FROM users WHERE id = :user_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    // Validate board exists
+    private function boardExists($board_id) {
+        $query = "SELECT id FROM boards WHERE id = :board_id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':board_id', $board_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    // Read all students with improved joins
     public function read() {
         $query = "SELECT s.*, 
                          rbm.full_name as rbm_name, rbm.branch as rbm_branch,
                          c.full_name as counselor_name, c.user_type as counselor_type,
                          b.name as board_name
                 FROM " . $this->table_name . " s
-                LEFT JOIN users rbm ON s.rbm_id = rbm.id
-                LEFT JOIN users c ON s.counselor_id = c.id
+                LEFT JOIN users rbm ON s.rbm_id = rbm.id AND rbm.user_type = 'rbm'
+                LEFT JOIN users c ON s.counselor_id = c.id AND c.user_type IN ('councillor', 'admin')
                 LEFT JOIN boards b ON s.board_id = b.id
                 ORDER BY s.created_at DESC";
 
@@ -101,7 +186,7 @@ class Student {
         return $stmt;
     }
 
-    // Read single student
+    // Read single student with validation
     public function readOne() {
         $query = "SELECT s.*, 
                          rbm.full_name as rbm_name, rbm.branch as rbm_branch,
@@ -111,7 +196,7 @@ class Student {
                 LEFT JOIN users rbm ON s.rbm_id = rbm.id
                 LEFT JOIN users c ON s.counselor_id = c.id
                 LEFT JOIN boards b ON s.board_id = b.id
-                WHERE s.id = ? LIMIT 0,1";
+                WHERE s.id = ? LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $this->id);
@@ -137,66 +222,116 @@ class Student {
         return false;
     }
 
-    // Update student
+    // Update student with validation
     public function update() {
-        $query = "UPDATE " . $this->table_name . " 
-                SET full_name=:full_name, affiliation=:affiliation, grade=:grade,
-                    counselor_id=:counselor_id, rbm_id=:rbm_id, board_id=:board_id,
-                    contact_no=:contact_no, email_address=:email_address, application_year=:application_year
-                WHERE id=:id";
+        try {
+            // Start transaction
+            $this->conn->beginTransaction();
+            
+            // Validate foreign key references
+            if (!empty($this->counselor_id) && !$this->userExists($this->counselor_id)) {
+                throw new Exception('Invalid counselor ID');
+            }
+            
+            if (!empty($this->rbm_id) && !$this->userExists($this->rbm_id)) {
+                throw new Exception('Invalid RBM ID');
+            }
+            
+            if (!empty($this->board_id) && !$this->boardExists($this->board_id)) {
+                throw new Exception('Invalid board ID');
+            }
+            
+            $query = "UPDATE " . $this->table_name . " 
+                    SET full_name=:full_name, affiliation=:affiliation, grade=:grade,
+                        counselor_id=:counselor_id, rbm_id=:rbm_id, board_id=:board_id,
+                        contact_no=:contact_no, email_address=:email_address, application_year=:application_year
+                    WHERE id=:id";
 
-        $stmt = $this->conn->prepare($query);
+            $stmt = $this->conn->prepare($query);
 
-        $this->full_name = htmlspecialchars(strip_tags($this->full_name));
-        $this->affiliation = htmlspecialchars(strip_tags($this->affiliation));
-        $this->grade = htmlspecialchars(strip_tags($this->grade));
-        $this->contact_no = htmlspecialchars(strip_tags($this->contact_no));
-        $this->email_address = htmlspecialchars(strip_tags($this->email_address));
+            $this->full_name = htmlspecialchars(strip_tags($this->full_name));
+            $this->affiliation = htmlspecialchars(strip_tags($this->affiliation));
+            $this->grade = htmlspecialchars(strip_tags($this->grade));
+            $this->contact_no = htmlspecialchars(strip_tags($this->contact_no));
+            $this->email_address = htmlspecialchars(strip_tags($this->email_address));
 
-        $stmt->bindParam(':full_name', $this->full_name);
-        $stmt->bindParam(':affiliation', $this->affiliation);
-        $stmt->bindParam(':grade', $this->grade);
-        $stmt->bindParam(':counselor_id', $this->counselor_id);
-        $stmt->bindParam(':rbm_id', $this->rbm_id);
-        $stmt->bindParam(':board_id', $this->board_id);
-        $stmt->bindParam(':contact_no', $this->contact_no);
-        $stmt->bindParam(':email_address', $this->email_address);
-        $stmt->bindParam(':application_year', $this->application_year);
-        $stmt->bindParam(':id', $this->id);
+            $stmt->bindParam(':full_name', $this->full_name);
+            $stmt->bindParam(':affiliation', $this->affiliation);
+            $stmt->bindParam(':grade', $this->grade);
+            $stmt->bindParam(':counselor_id', $this->counselor_id);
+            $stmt->bindParam(':rbm_id', $this->rbm_id);
+            $stmt->bindParam(':board_id', $this->board_id);
+            $stmt->bindParam(':contact_no', $this->contact_no);
+            $stmt->bindParam(':email_address', $this->email_address);
+            $stmt->bindParam(':application_year', $this->application_year);
+            $stmt->bindParam(':id', $this->id);
 
-        if($stmt->execute()) {
-            return true;
+            if($stmt->execute()) {
+                $this->conn->commit();
+                return true;
+            } else {
+                $this->conn->rollback();
+                return false;
+            }
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-        return false;
     }
 
-    // Delete student
+    // Delete student with cascade handling
     public function delete() {
-        $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $this->id);
+        try {
+            $this->conn->beginTransaction();
+            
+            // Check for dependencies first
+            $dependencies = $this->checkDependencies();
+            if (!empty($dependencies)) {
+                throw new Exception('Cannot delete student. Dependencies exist: ' . implode(', ', $dependencies));
+            }
+            
+            $query = "DELETE FROM " . $this->table_name . " WHERE id = ?";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(1, $this->id);
 
-        if($stmt->execute()) {
-            return true;
+            if($stmt->execute()) {
+                $this->conn->commit();
+                return true;
+            } else {
+                $this->conn->rollback();
+                return false;
+            }
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            throw $e;
         }
-        return false;
     }
 
-    // Check if student ID exists
-    public function studentIdExists() {
-        $query = "SELECT id FROM " . $this->table_name . " WHERE student_id = :student_id LIMIT 0,1";
+    // Check for dependencies before deletion
+    private function checkDependencies() {
+        $dependencies = [];
+        
+        // Check project assignments
+        $query = "SELECT COUNT(*) as count FROM project_students WHERE student_id = ?";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':student_id', $this->student_id);
-        $stmt->execute();
-
-        if($stmt->rowCount() > 0) {
-            return true;
+        $stmt->execute([$this->id]);
+        if ($stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0) {
+            $dependencies[] = 'Project assignments';
         }
-        return false;
+        
+        // Check publication assignments
+        $query = "SELECT COUNT(*) as count FROM ready_for_publication_students WHERE student_id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$this->id]);
+        if ($stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0) {
+            $dependencies[] = 'Publication assignments';
+        }
+        
+        return $dependencies;
     }
 
-    // Search students
-    public function search($search_term) {
+    // Search students with improved filtering
+    public function search($search_term, $filters = []) {
         $query = "SELECT s.*, 
                          rbm.full_name as rbm_name, rbm.branch as rbm_branch,
                          c.full_name as counselor_name, c.user_type as counselor_type,
@@ -205,16 +340,37 @@ class Student {
                 LEFT JOIN users rbm ON s.rbm_id = rbm.id
                 LEFT JOIN users c ON s.counselor_id = c.id
                 LEFT JOIN boards b ON s.board_id = b.id
-                WHERE s.full_name LIKE :search_term 
-                   OR s.student_id LIKE :search_term 
-                   OR s.email_address LIKE :search_term
-                   OR s.affiliation LIKE :search_term
-                   OR s.contact_no LIKE :search_term
-                ORDER BY s.created_at DESC";
-
+                WHERE (s.full_name LIKE :search OR s.student_id LIKE :search OR s.email_address LIKE :search)";
+        
+        $params = [':search' => '%' . $search_term . '%'];
+        
+        // Add filters
+        if (!empty($filters['board_id'])) {
+            $query .= " AND s.board_id = :board_id";
+            $params[':board_id'] = $filters['board_id'];
+        }
+        
+        if (!empty($filters['counselor_id'])) {
+            $query .= " AND s.counselor_id = :counselor_id";
+            $params[':counselor_id'] = $filters['counselor_id'];
+        }
+        
+        if (!empty($filters['rbm_id'])) {
+            $query .= " AND s.rbm_id = :rbm_id";
+            $params[':rbm_id'] = $filters['rbm_id'];
+        }
+        
+        if (!empty($filters['application_year'])) {
+            $query .= " AND s.application_year = :application_year";
+            $params[':application_year'] = $filters['application_year'];
+        }
+        
+        $query .= " ORDER BY s.created_at DESC";
+        
         $stmt = $this->conn->prepare($query);
-        $search_term = "%{$search_term}%";
-        $stmt->bindParam(':search_term', $search_term);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
         $stmt->execute();
         return $stmt;
     }
@@ -229,15 +385,15 @@ class Student {
                 LEFT JOIN users rbm ON s.rbm_id = rbm.id
                 LEFT JOIN users c ON s.counselor_id = c.id
                 LEFT JOIN boards b ON s.board_id = b.id
-                WHERE s.rbm_id = :rbm_id
-                ORDER BY s.created_at DESC";
+                WHERE s.rbm_id = ?
+                ORDER BY s.full_name";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':rbm_id', $rbm_id);
+        $stmt->bindParam(1, $rbm_id);
         $stmt->execute();
         return $stmt;
     }
-    
+
     // Get students by counselor
     public function getByCounselor($counselor_id) {
         $query = "SELECT s.*, 
@@ -248,45 +404,39 @@ class Student {
                 LEFT JOIN users rbm ON s.rbm_id = rbm.id
                 LEFT JOIN users c ON s.counselor_id = c.id
                 LEFT JOIN boards b ON s.board_id = b.id
-                WHERE s.counselor_id = :counselor_id
-                ORDER BY s.created_at DESC";
+                WHERE s.counselor_id = ?
+                ORDER BY s.full_name";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':counselor_id', $counselor_id);
+        $stmt->bindParam(1, $counselor_id);
         $stmt->execute();
         return $stmt;
     }
-    
-    // Get all boards
+
+    // Get boards for dropdown
     public function getBoards() {
         $query = "SELECT * FROM boards ORDER BY name";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
-    // Add new board
+
+    // Add board safely
     public function addBoard($board_name) {
-        $query = "INSERT INTO boards (name) VALUES (:name)";
+        $query = "INSERT IGNORE INTO boards (name) VALUES (?)";
         $stmt = $this->conn->prepare($query);
-        $board_name = htmlspecialchars(strip_tags($board_name));
-        $stmt->bindParam(':name', $board_name);
-        
-        if($stmt->execute()) {
-            return $this->conn->lastInsertId();
-        }
-        return false;
+        return $stmt->execute([htmlspecialchars(strip_tags($board_name))]);
     }
-    
-    // Get counselor users (councillor type)
+
+    // Get counselors for dropdown
     public function getCounselors() {
         $query = "SELECT id, full_name, organization_name FROM users WHERE user_type = 'councillor' AND status = 'active' ORDER BY full_name";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
-    // Get all students (returns array instead of PDO statement)
+
+    // Get all students for general use
     public function getAll() {
         $query = "SELECT s.*, 
                          rbm.full_name as rbm_name, rbm.branch as rbm_branch,
@@ -302,7 +452,7 @@ class Student {
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
     // Get students by application year
     public function getByApplicationYear($application_year) {
         $query = "SELECT s.*, 
@@ -313,24 +463,24 @@ class Student {
                 LEFT JOIN users rbm ON s.rbm_id = rbm.id
                 LEFT JOIN users c ON s.counselor_id = c.id
                 LEFT JOIN boards b ON s.board_id = b.id
-                WHERE s.application_year = :application_year
-                ORDER BY s.created_at DESC";
+                WHERE s.application_year = ?
+                ORDER BY s.full_name";
 
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':application_year', $application_year);
+        $stmt->bindParam(1, $application_year);
         $stmt->execute();
         return $stmt;
     }
-    
-    // Get distinct application years
+
+    // Get available application years
     public function getApplicationYears() {
-        $query = "SELECT DISTINCT application_year 
-                FROM " . $this->table_name . " 
-                WHERE application_year IS NOT NULL 
-                ORDER BY application_year DESC";
+        $query = "SELECT DISTINCT application_year FROM " . $this->table_name . " 
+                  WHERE application_year IS NOT NULL 
+                  ORDER BY application_year DESC";
+        
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        return $stmt;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
 ?>

@@ -68,6 +68,7 @@ class User {
         $stmt->bindParam(":status", $this->status);
 
         if($stmt->execute()) {
+            $this->id = $this->conn->lastInsertId();
             return true;
         }
         return false;
@@ -126,7 +127,7 @@ class User {
     // Update user
     public function update() {
         $query = "UPDATE " . $this->table_name . " 
-                SET full_name=:full_name, username=:username, department_id=:department_id,
+                SET full_name=:full_name, username=:username, user_type=:user_type, department_id=:department_id,
                     specialization=:specialization, organization_id=:organization_id,
                     organization_name=:organization_name, mou_signed=:mou_signed,
                     mou_drive_link=:mou_drive_link, contact_no=:contact_no, email_id=:email_id,
@@ -138,9 +139,11 @@ class User {
 
         $this->full_name = htmlspecialchars(strip_tags($this->full_name));
         $this->username = htmlspecialchars(strip_tags($this->username));
+        $this->user_type = htmlspecialchars(strip_tags($this->user_type));
 
         $stmt->bindParam(':full_name', $this->full_name);
         $stmt->bindParam(':username', $this->username);
+        $stmt->bindParam(':user_type', $this->user_type);
         $stmt->bindParam(':department_id', $this->department_id);
         $stmt->bindParam(':specialization', $this->specialization);
         $stmt->bindParam(':organization_id', $this->organization_id);
@@ -246,6 +249,18 @@ class User {
         $query = "SELECT id, full_name, username, specialization, branch FROM users WHERE user_type = :user_type AND status = 'active' ORDER BY full_name";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_type', $user_type);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Search users by name or username
+    public function search($searchTerm) {
+        $query = "SELECT id, full_name, username, user_type, email_id FROM " . $this->table_name . " 
+                  WHERE (full_name LIKE :search OR username LIKE :search) AND status = 'active' 
+                  ORDER BY full_name";
+        $stmt = $this->conn->prepare($query);
+        $searchTerm = '%' . $searchTerm . '%';
+        $stmt->bindParam(':search', $searchTerm);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

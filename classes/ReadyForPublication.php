@@ -6,9 +6,13 @@ class ReadyForPublication {
     private $table_name = "ready_for_publication";
     private $students_table = "ready_for_publication_students";
     
-    public function __construct() {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct($db = null) {
+        if ($db) {
+            $this->conn = $db;
+        } else {
+            $database = new Database();
+            $this->conn = $database->getConnection();
+        }
     }
     
     // Get all ready for publication entries
@@ -92,18 +96,19 @@ class ReadyForPublication {
     
     // Create ready for publication entry from project
     public function createFromProject($project_id) {
+        // Check if project already exists in ready for publication (due to unique constraint)
+        $check_query = "SELECT id, status, workflow_status FROM " . $this->table_name . " WHERE project_id = :project_id";
+        $check_stmt = $this->conn->prepare($check_query);
+        $check_stmt->bindParam(':project_id', $project_id);
+        $check_stmt->execute();
+        $existing = $check_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existing) {
+            throw new Exception("Project already has a Ready for Publication entry (ID: {$existing['id']}, Status: {$existing['status']}, Workflow: {$existing['workflow_status']}). Please edit the existing entry instead of creating a new one.");
+        }
+        
         try {
             $this->conn->beginTransaction();
-            
-            // Check if project already exists in ready for publication (active only)
-            $check_query = "SELECT id FROM " . $this->table_name . " WHERE project_id = :project_id AND workflow_status = 'active'";
-            $check_stmt = $this->conn->prepare($check_query);
-            $check_stmt->bindParam(':project_id', $project_id);
-            $check_stmt->execute();
-            
-            if ($check_stmt->rowCount() > 0) {
-                throw new Exception("Project is already in ready for publication list");
-            }
             
             // Get project details
             $project_query = "SELECT p.*, mentor.full_name as mentor_name, mentor.specialization as mentor_specialization
@@ -128,11 +133,14 @@ class ReadyForPublication {
             $paper_title = $project['project_name']; // Default to project name
             $mentor_affiliation = $project['mentor_specialization'] ?? '';
             
+            $first_draft_link = null;
+            $plagiarism_report_link = null;
+            
             $insert_stmt->bindParam(':project_id', $project_id);
             $insert_stmt->bindParam(':paper_title', $paper_title);
             $insert_stmt->bindParam(':mentor_affiliation', $mentor_affiliation);
-            $insert_stmt->bindParam(':first_draft_link', $first_draft_link = null);
-            $insert_stmt->bindParam(':plagiarism_report_link', $plagiarism_report_link = null);
+            $insert_stmt->bindParam(':first_draft_link', $first_draft_link);
+            $insert_stmt->bindParam(':plagiarism_report_link', $plagiarism_report_link);
             $insert_stmt->execute();
             
             $publication_id = $this->conn->lastInsertId();
@@ -266,11 +274,13 @@ class ReadyForPublication {
                 $student_insert_stmt = $this->conn->prepare($student_insert_query);
                 
                 foreach ($data['students'] as $index => $student) {
+                    $author_order_value = $student['author_order'] ?? ($index + 1);
+                    
                     $student_insert_stmt->bindParam(':publication_id', $publication_id);
                     $student_insert_stmt->bindParam(':student_id', $student['student_id']);
                     $student_insert_stmt->bindParam(':student_affiliation', $student['affiliation']);
                     $student_insert_stmt->bindParam(':student_address', $student['address']);
-                    $student_insert_stmt->bindParam(':author_order', $student['author_order'] ?? ($index + 1));
+                    $student_insert_stmt->bindParam(':author_order', $author_order_value);
                     $student_insert_stmt->execute();
                 }
             }

@@ -12,42 +12,102 @@ $user = new User($db);
 $error_message = '';
 $success_message = '';
 
+// Get user ID from URL
+$user_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+
+if ($user_id <= 0) {
+    header('Location: list.php');
+    exit();
+}
+
+// Load user data
+$user->id = $user_id;
+if (!$user->readOne()) {
+    header('Location: list.php?error=User not found');
+    exit();
+}
+
+// Store original data
+$original_user_data = [
+    'user_type' => $user->user_type,
+    'full_name' => $user->full_name,
+    'username' => $user->username,
+    'department_id' => $user->department_id,
+    'specialization' => $user->specialization,
+    'organization_id' => $user->organization_id,
+    'organization_name' => $user->organization_name,
+    'mou_signed' => $user->mou_signed,
+    'mou_drive_link' => $user->mou_drive_link,
+    'contact_no' => $user->contact_no,
+    'email_id' => $user->email_id,
+    'address' => $user->address,
+    'primary_contact_id' => $user->primary_contact_id,
+    'councillor_rbm_id' => $user->councillor_rbm_id,
+    'branch' => $user->branch,
+    'status' => $user->status
+];
+
 // Get departments and organizations for dropdowns
 $departments = $user->getDepartments()->fetchAll(PDO::FETCH_ASSOC);
 $organizations = $user->getOrganizations()->fetchAll(PDO::FETCH_ASSOC);
-
-// Get RBM users for dropdown
 $rbm_users = $user->getRBMUsers()->fetchAll(PDO::FETCH_ASSOC);
 
-// Get all users for primary contact dropdown
-$contact_users = $user->getAllUsersForContact()->fetchAll(PDO::FETCH_ASSOC);
+// Get all users for primary contact dropdown (excluding current user)
+$contact_users_stmt = $user->getAllUsersForContact();
+$contact_users = [];
+while ($contact_user = $contact_users_stmt->fetch(PDO::FETCH_ASSOC)) {
+    if ($contact_user['id'] != $user_id) {
+        $contact_users[] = $contact_user;
+    }
+}
 
 if ($_POST) {
     // Validate input
     $user_type = trim($_POST['user_type']);
     $full_name = trim($_POST['full_name']);
     $username = trim($_POST['username']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
+    $new_password = $_POST['new_password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
 
-    if (empty($user_type) || empty($full_name) || empty($username) || empty($password)) {
+    if (empty($user_type) || empty($full_name) || empty($username)) {
         $error_message = "Please fill in all required fields.";
-    } elseif ($password !== $confirm_password) {
+    } elseif (!empty($new_password) && $new_password !== $confirm_password) {
         $error_message = "Passwords do not match.";
-    } elseif (strlen($password) < 6) {
+    } elseif (!empty($new_password) && strlen($new_password) < 6) {
         $error_message = "Password must be at least 6 characters long.";
     } else {
-        // Check if username already exists
-        $user->username = $username;
-        if ($user->usernameExists()) {
-            $error_message = "Username already exists. Please choose a different username.";
-        } else {
+        // Check if username already exists (for other users)
+        $checkUser = new User($db);
+        $checkUser->username = $username;
+        if ($checkUser->usernameExists()) {
+            // Get the user with this username
+            $stmt = $db->prepare("SELECT id FROM users WHERE username = :username");
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+            $existing_user = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($existing_user['id'] != $user_id) {
+                $error_message = "Username already exists. Please choose a different username.";
+            }
+        }
+        
+        if (empty($error_message)) {
             // Set user properties
             $user->user_type = $user_type;
             $user->full_name = $full_name;
             $user->username = $username;
-            $user->password = $password;
-            $user->status = 'active';
+            
+            // Only update password if a new one is provided
+            if (!empty($new_password)) {
+                $user->password = password_hash($new_password, PASSWORD_DEFAULT);
+                
+                // Update password separately
+                $pwd_query = "UPDATE users SET password = :password WHERE id = :id";
+                $pwd_stmt = $db->prepare($pwd_query);
+                $pwd_stmt->bindParam(':password', $user->password);
+                $pwd_stmt->bindParam(':id', $user_id);
+                $pwd_stmt->execute();
+            }
 
             // Set type-specific fields
             if ($user_type == 'admin') {
@@ -176,14 +236,34 @@ if ($_POST) {
                 $user->councillor_rbm_id = null;
                 $user->branch = trim($_POST['branch']);
             }
+            
+            $user->status = $_POST['status'] ?? 'active';
 
-            // Create user
-            if ($user->create()) {
-                $success_message = "User created successfully!";
-                // Clear form data
-                $_POST = array();
+            // Update user
+            if ($user->update()) {
+                $success_message = "User updated successfully!";
+                // Reload user data to reflect changes
+                $user->readOne();
+                $original_user_data = [
+                    'user_type' => $user->user_type,
+                    'full_name' => $user->full_name,
+                    'username' => $user->username,
+                    'department_id' => $user->department_id,
+                    'specialization' => $user->specialization,
+                    'organization_id' => $user->organization_id,
+                    'organization_name' => $user->organization_name,
+                    'mou_signed' => $user->mou_signed,
+                    'mou_drive_link' => $user->mou_drive_link,
+                    'contact_no' => $user->contact_no,
+                    'email_id' => $user->email_id,
+                    'address' => $user->address,
+                    'primary_contact_id' => $user->primary_contact_id,
+                    'councillor_rbm_id' => $user->councillor_rbm_id,
+                    'branch' => $user->branch,
+                    'status' => $user->status
+                ];
             } else {
-                $error_message = "Error creating user. Please try again.";
+                $error_message = "Error updating user. Please try again.";
             }
         }
     }
@@ -194,8 +274,7 @@ if ($_POST) {
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-    <title>Create User - Research Apps</title>
-    <meta name="description" content="" />
+    <title>Edit User - Research Apps</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="../Apps/assets/img/favicon/favicon.ico" />
@@ -203,7 +282,7 @@ if ($_POST) {
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Icons -->
     <link rel="stylesheet" href="../Apps/assets/vendor/fonts/boxicons.css" />
@@ -216,7 +295,7 @@ if ($_POST) {
     <!-- Vendors CSS -->
     <link rel="stylesheet" href="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
 
-    <!-- Tom Select Bootstrap 5 theme CSS -->
+    <!-- Tom Select CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
 
     <!-- Helpers -->
@@ -243,7 +322,7 @@ if ($_POST) {
                     <!-- Content -->
                     <div class="container-xxl flex-grow-1 container-p-y">
                         <h4 class="fw-bold py-3 mb-4">
-                            <span class="text-muted fw-light">User Management /</span> Create User
+                            <span class="text-muted fw-light">User Management /</span> Edit User
                         </h4>
 
                         <?php if (!empty($error_message)): ?>
@@ -260,11 +339,11 @@ if ($_POST) {
                             </div>
                         <?php endif; ?>
 
-                        <!-- Create User Form -->
+                        <!-- Edit User Form -->
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="card mb-4">
-                                    <h5 class="card-header">Create New User</h5>
+                                    <h5 class="card-header">Edit User: <?php echo htmlspecialchars($original_user_data['full_name']); ?></h5>
                                     <div class="card-body">
                                         <form method="POST">
                                             <div class="row">
@@ -273,37 +352,49 @@ if ($_POST) {
                                                     <label for="user_type" class="form-label">User Type <span class="text-danger">*</span></label>
                                                     <select class="form-select" id="user_type" name="user_type" required onchange="toggleUserTypeFields()">
                                                         <option value="">Select User Type</option>
-                                                        <option value="admin" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'admin') ? 'selected' : ''; ?>>Admin</option>
-                                                        <option value="mentor" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'mentor') ? 'selected' : ''; ?>>Mentor</option>
-                                                        <option value="councillor" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'councillor') ? 'selected' : ''; ?>>Councillor</option>
-                                                        <option value="rbm" <?php echo (isset($_POST['user_type']) && $_POST['user_type'] == 'rbm') ? 'selected' : ''; ?>>RBM (Research Branch Manager)</option>
+                                                        <option value="admin" <?php echo ($original_user_data['user_type'] == 'admin') ? 'selected' : ''; ?>>Admin</option>
+                                                        <option value="mentor" <?php echo ($original_user_data['user_type'] == 'mentor') ? 'selected' : ''; ?>>Mentor</option>
+                                                        <option value="councillor" <?php echo ($original_user_data['user_type'] == 'councillor') ? 'selected' : ''; ?>>Councillor</option>
+                                                        <option value="rbm" <?php echo ($original_user_data['user_type'] == 'rbm') ? 'selected' : ''; ?>>RBM (Research Branch Manager)</option>
                                                     </select>
                                                 </div>
 
-                                                <!-- Full Name -->
+                                                <!-- Status -->
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control" id="full_name" name="full_name" value="<?php echo isset($_POST['full_name']) ? htmlspecialchars($_POST['full_name']) : ''; ?>" required>
+                                                    <label for="status" class="form-label">Status</label>
+                                                    <select class="form-select" id="status" name="status">
+                                                        <option value="active" <?php echo ($original_user_data['status'] == 'active') ? 'selected' : ''; ?>>Active</option>
+                                                        <option value="inactive" <?php echo ($original_user_data['status'] == 'inactive') ? 'selected' : ''; ?>>Inactive</option>
+                                                    </select>
                                                 </div>
                                             </div>
 
                                             <div class="row">
+                                                <!-- Full Name -->
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control" id="full_name" name="full_name" value="<?php echo htmlspecialchars($original_user_data['full_name']); ?>" required>
+                                                </div>
+
                                                 <!-- Username -->
                                                 <div class="col-md-6 mb-3">
                                                     <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control" id="username" name="username" value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>" required>
+                                                    <input type="text" class="form-control" id="username" name="username" value="<?php echo htmlspecialchars($original_user_data['username']); ?>" required>
                                                 </div>
+                                            </div>
 
-                                                <!-- Password -->
-                                                <div class="col-md-3 mb-3">
-                                                    <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                                                    <input type="password" class="form-control" id="password" name="password" required>
+                                            <div class="row">
+                                                <!-- New Password -->
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="new_password" class="form-label">New Password</label>
+                                                    <input type="password" class="form-control" id="new_password" name="new_password">
+                                                    <div class="form-text">Leave blank to keep current password</div>
                                                 </div>
 
                                                 <!-- Confirm Password -->
-                                                <div class="col-md-3 mb-3">
-                                                    <label for="confirm_password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
-                                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password">
                                                 </div>
                                             </div>
 
@@ -315,7 +406,7 @@ if ($_POST) {
                                                         <select class="form-select" id="department_id" name="department_id">
                                                             <option value="">Select Department</option>
                                                             <?php foreach ($departments as $dept): ?>
-                                                                <option value="<?php echo $dept['id']; ?>" <?php echo (isset($_POST['department_id']) && $_POST['department_id'] == $dept['id']) ? 'selected' : ''; ?>>
+                                                                <option value="<?php echo $dept['id']; ?>" <?php echo ($original_user_data['department_id'] == $dept['id']) ? 'selected' : ''; ?>>
                                                                     <?php echo htmlspecialchars($dept['name']); ?>
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -330,66 +421,42 @@ if ($_POST) {
                                                     <div class="col-md-6 mb-3">
                                                         <label for="specialization" class="form-label">Specializations</label>
                                                         <select id="specialization-select" class="form-select" multiple placeholder="Select specializations..." name="specializations[]">
-                                                            <option value="Machine Learning">Machine Learning</option>
-                                                            <option value="Artificial Intelligence">Artificial Intelligence</option>
-                                                            <option value="Data Science">Data Science</option>
-                                                            <option value="Web Development">Web Development</option>
-                                                            <option value="Mobile App Development">Mobile App Development</option>
-                                                            <option value="Software Engineering">Software Engineering</option>
-                                                            <option value="Database Management">Database Management</option>
-                                                            <option value="Cloud Computing">Cloud Computing</option>
-                                                            <option value="Cybersecurity">Cybersecurity</option>
-                                                            <option value="DevOps">DevOps</option>
-                                                            <option value="UI/UX Design">UI/UX Design</option>
-                                                            <option value="Computer Vision">Computer Vision</option>
-                                                            <option value="Natural Language Processing">Natural Language Processing</option>
-                                                            <option value="Robotics">Robotics</option>
-                                                            <option value="IoT">Internet of Things (IoT)</option>
-                                                            <option value="Blockchain">Blockchain Technology</option>
-                                                            <option value="Game Development">Game Development</option>
-                                                            <option value="Virtual Reality">Virtual Reality</option>
-                                                            <option value="Augmented Reality">Augmented Reality</option>
-                                                            <option value="Quantum Computing">Quantum Computing</option>
-                                                            <option value="Bioinformatics">Bioinformatics</option>
-                                                            <option value="Health Informatics">Health Informatics</option>
-                                                            <option value="Environmental Technology">Environmental Technology</option>
-                                                            <option value="Renewable Energy">Renewable Energy</option>
-                                                            <option value="Electronics">Electronics</option>
-                                                            <option value="Signal Processing">Signal Processing</option>
-                                                            <option value="Network Security">Network Security</option>
-                                                            <option value="Digital Marketing">Digital Marketing</option>
-                                                            <option value="Project Management">Project Management</option>
-                                                            <option value="Research Methodology">Research Methodology</option>
-                                                            <option value="Academic Writing">Academic Writing</option>
-                                                            <option value="Statistical Analysis">Statistical Analysis</option>
-                                                            <option value="Mathematics">Mathematics</option>
-                                                            <option value="Physics">Physics</option>
-                                                            <option value="Chemistry">Chemistry</option>
-                                                            <option value="Biology">Biology</option>
-                                                            <option value="Biomedical Engineering">Biomedical Engineering</option>
-                                                            <option value="Mechanical Engineering">Mechanical Engineering</option>
-                                                            <option value="Electrical Engineering">Electrical Engineering</option>
-                                                            <option value="Civil Engineering">Civil Engineering</option>
-                                                            <option value="Environmental Science">Environmental Science</option>
-                                                            <option value="Materials Science">Materials Science</option>
-                                                            <option value="Nanotechnology">Nanotechnology</option>
-                                                            <option value="Space Technology">Space Technology</option>
-                                                            <option value="Education Technology">Education Technology</option>
-                                                            <option value="Social Innovation">Social Innovation</option>
-                                                            <option value="Digital Healthcare">Digital Healthcare</option>
-                                                            <option value="Business Analysis">Business Analysis</option>
-                                                            <option value="Finance">Finance</option>
-                                                            <option value="Healthcare Management">Healthcare Management</option>
-                                                            <option value="Education">Education</option>
+                                                            <?php 
+                                                            $specialization_options = [
+                                                                'Machine Learning', 'Artificial Intelligence', 'Data Science', 'Web Development',
+                                                                'Mobile App Development', 'Software Engineering', 'Database Management', 'Cloud Computing',
+                                                                'Cybersecurity', 'DevOps', 'UI/UX Design', 'Computer Vision', 'Natural Language Processing',
+                                                                'Robotics', 'Internet of Things (IoT)', 'Blockchain Technology', 'Game Development',
+                                                                'Virtual Reality', 'Augmented Reality', 'Quantum Computing', 'Bioinformatics',
+                                                                'Health Informatics', 'Environmental Technology', 'Renewable Energy', 'Electronics',
+                                                                'Signal Processing', 'Network Security', 'Digital Marketing', 'Project Management',
+                                                                'Research Methodology', 'Academic Writing', 'Statistical Analysis', 'Mathematics',
+                                                                'Physics', 'Chemistry', 'Biology', 'Biomedical Engineering', 'Mechanical Engineering',
+                                                                'Electrical Engineering', 'Civil Engineering', 'Environmental Science', 'Materials Science',
+                                                                'Nanotechnology', 'Space Technology', 'Education Technology', 'Social Innovation',
+                                                                'Digital Healthcare', 'Business Analysis', 'Finance', 'Healthcare Management', 'Education'
+                                                            ];
+                                                            
+                                                            $current_specializations = !empty($original_user_data['specialization']) 
+                                                                ? explode(', ', $original_user_data['specialization']) 
+                                                                : [];
+                                                            
+                                                            foreach ($specialization_options as $option): 
+                                                                $selected = in_array($option, $current_specializations) ? 'selected' : '';
+                                                            ?>
+                                                                <option value="<?php echo htmlspecialchars($option); ?>" <?php echo $selected; ?>>
+                                                                    <?php echo htmlspecialchars($option); ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
                                                         </select>
                                                         <div class="form-text">Select your areas of expertise and specialization</div>
                                                     </div>
-                                                                                                        <div class="col-md-6 mb-3">
+                                                    <div class="col-md-6 mb-3">
                                                         <label for="organization_id" class="form-label">Organization</label>
                                                         <select class="form-select" id="organization_id" name="organization_id" onchange="toggleNewOrganizationField()">
                                                             <option value="">Select Organization</option>
                                                             <?php foreach ($organizations as $org): ?>
-                                                                <option value="<?php echo $org['id']; ?>" <?php echo (isset($_POST['organization_id']) && $_POST['organization_id'] == $org['id']) ? 'selected' : ''; ?>>
+                                                                <option value="<?php echo $org['id']; ?>" <?php echo ($original_user_data['organization_id'] == $org['id']) ? 'selected' : ''; ?>>
                                                                     <?php echo htmlspecialchars($org['name']); ?>
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -415,7 +482,7 @@ if ($_POST) {
                                                         <select class="form-select" id="organization_id_councillor" name="organization_id" onchange="toggleNewOrganizationFieldCouncillor()">
                                                             <option value="">Select Organization</option>
                                                             <?php foreach ($organizations as $org): ?>
-                                                                <option value="<?php echo $org['id']; ?>" <?php echo (isset($_POST['organization_id']) && $_POST['organization_id'] == $org['id']) ? 'selected' : ''; ?>>
+                                                                <option value="<?php echo $org['id']; ?>" <?php echo ($original_user_data['organization_id'] == $org['id']) ? 'selected' : ''; ?>>
                                                                     <?php echo htmlspecialchars($org['name']); ?>
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -435,17 +502,20 @@ if ($_POST) {
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">MOU Signed</label>
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" id="mou_signed" name="mou_signed" value="1" <?php echo (isset($_POST['mou_signed']) && $_POST['mou_signed'] == '1') ? 'checked' : ''; ?> onchange="toggleMOULink()">
+                                                            <input class="form-check-input" type="checkbox" id="mou_signed" name="mou_signed" value="1" 
+                                                                   <?php echo ($original_user_data['mou_signed']) ? 'checked' : ''; ?> onchange="toggleMOULink()">
                                                             <label class="form-check-label" for="mou_signed">
                                                                 MOU has been signed
                                                             </label>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="row" id="mou_link_field" style="display: none;">
+                                                <div class="row" id="mou_link_field" style="display: <?php echo ($original_user_data['mou_signed']) ? 'block' : 'none'; ?>;">
                                                     <div class="col-md-12 mb-3">
                                                         <label for="mou_drive_link" class="form-label">MOU Drive Link</label>
-                                                        <input type="url" class="form-control" id="mou_drive_link" name="mou_drive_link" value="<?php echo isset($_POST['mou_drive_link']) ? htmlspecialchars($_POST['mou_drive_link']) : ''; ?>" placeholder="https://drive.google.com/...">
+                                                        <input type="url" class="form-control" id="mou_drive_link" name="mou_drive_link" 
+                                                               value="<?php echo htmlspecialchars($original_user_data['mou_drive_link'] ?? ''); ?>" 
+                                                               placeholder="https://drive.google.com/...">
                                                         <div class="form-text">Provide the Google Drive link to the signed MOU document</div>
                                                     </div>
                                                 </div>
@@ -454,17 +524,21 @@ if ($_POST) {
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
                                                         <label for="contact_no" class="form-label">Contact No</label>
-                                                        <input type="tel" class="form-control" id="contact_no" name="contact_no" value="<?php echo isset($_POST['contact_no']) ? htmlspecialchars($_POST['contact_no']) : ''; ?>" placeholder="+1234567890">
+                                                        <input type="tel" class="form-control" id="contact_no" name="contact_no" 
+                                                               value="<?php echo htmlspecialchars($original_user_data['contact_no'] ?? ''); ?>" 
+                                                               placeholder="+1234567890">
                                                     </div>
                                                     <div class="col-md-6 mb-3">
                                                         <label for="email_id" class="form-label">Email ID</label>
-                                                        <input type="email" class="form-control" id="email_id" name="email_id" value="<?php echo isset($_POST['email_id']) ? htmlspecialchars($_POST['email_id']) : ''; ?>" placeholder="councillor@example.com">
+                                                        <input type="email" class="form-control" id="email_id" name="email_id" 
+                                                               value="<?php echo htmlspecialchars($original_user_data['email_id'] ?? ''); ?>" 
+                                                               placeholder="councillor@example.com">
                                                     </div>
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12 mb-3">
                                                         <label for="address" class="form-label">Address</label>
-                                                        <textarea class="form-control" id="address" name="address" rows="3" placeholder="Enter full address"><?php echo isset($_POST['address']) ? htmlspecialchars($_POST['address']) : ''; ?></textarea>
+                                                        <textarea class="form-control" id="address" name="address" rows="3" placeholder="Enter full address"><?php echo htmlspecialchars($original_user_data['address'] ?? ''); ?></textarea>
                                                     </div>
                                                 </div>
                                                 <div class="row">
@@ -473,7 +547,7 @@ if ($_POST) {
                                                         <select class="form-select" id="primary_contact_id" name="primary_contact_id">
                                                             <option value="">Select Primary Contact</option>
                                                             <?php foreach ($contact_users as $contact): ?>
-                                                                <option value="<?php echo $contact['id']; ?>" <?php echo (isset($_POST['primary_contact_id']) && $_POST['primary_contact_id'] == $contact['id']) ? 'selected' : ''; ?>>
+                                                                <option value="<?php echo $contact['id']; ?>" <?php echo ($original_user_data['primary_contact_id'] == $contact['id']) ? 'selected' : ''; ?>>
                                                                     <?php echo htmlspecialchars($contact['full_name']); ?> (<?php echo ucfirst($contact['user_type']); ?>)
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -485,7 +559,7 @@ if ($_POST) {
                                                         <select class="form-select" id="councillor_rbm_id" name="councillor_rbm_id">
                                                             <option value="">Select RBM</option>
                                                             <?php foreach ($rbm_users as $rbm): ?>
-                                                                <option value="<?php echo $rbm['id']; ?>" <?php echo (isset($_POST['councillor_rbm_id']) && $_POST['councillor_rbm_id'] == $rbm['id']) ? 'selected' : ''; ?>>
+                                                                <option value="<?php echo $rbm['id']; ?>" <?php echo ($original_user_data['councillor_rbm_id'] == $rbm['id']) ? 'selected' : ''; ?>>
                                                                     <?php echo htmlspecialchars($rbm['full_name']); ?> - <?php echo htmlspecialchars($rbm['branch']); ?>
                                                                 </option>
                                                             <?php endforeach; ?>
@@ -500,15 +574,19 @@ if ($_POST) {
                                                 <div class="row">
                                                     <div class="col-md-12 mb-3">
                                                         <label for="branch" class="form-label">Research Branch <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control" id="branch" name="branch" value="<?php echo isset($_POST['branch']) ? htmlspecialchars($_POST['branch']) : ''; ?>" placeholder="e.g., Computer Science Research, Biomedical Research">
-                                                        <div class="form-text">Specify the research branch or department that this RBM manages</div>
+                                                        <input type="text" class="form-control" id="branch" name="branch" 
+                                                               value="<?php echo htmlspecialchars($original_user_data['branch'] ?? ''); ?>" 
+                                                               placeholder="e.g., Computer Science Research, Biomedical Research">
+                                                        <div class="form-text">Specify the research branch this RBM oversees</div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div class="mt-4">
-                                                <button type="submit" class="btn btn-primary me-2">Create User</button>
-                                                <a href="/users/list.php" class="btn btn-outline-secondary">Cancel</a>
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <button type="submit" class="btn btn-primary me-2">Update User</button>
+                                                    <a href="list.php" class="btn btn-outline-secondary">Cancel</a>
+                                                </div>
                                             </div>
                                         </form>
                                     </div>
@@ -517,22 +595,10 @@ if ($_POST) {
                         </div>
                     </div>
                     <!-- / Content -->
-
-                    <!-- Footer -->
-                    <?php include '../includes/footer.php'; ?>
-                    <!-- / Footer -->
-
-                    <div class="content-backdrop fade"></div>
                 </div>
-                <!-- Content wrapper -->
             </div>
-            <!-- / Layout page -->
         </div>
-
-        <!-- Overlay -->
-        <div class="layout-overlay layout-menu-toggle"></div>
     </div>
-    <!-- / Layout wrapper -->
 
     <!-- Core JS -->
     <script src="../Apps/assets/vendor/libs/jquery/jquery.js"></script>
@@ -541,63 +607,60 @@ if ($_POST) {
     <script src="../Apps/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="../Apps/assets/vendor/js/menu.js"></script>
 
-    <!-- Tom Select JS -->
+    <!-- Tom Select -->
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
+    <!-- Main -->
     <script src="../Apps/assets/js/main.js"></script>
 
     <script>
-        let specializationTomSelect = null;
+        // Initialize Tom Select for specializations
+        let specializationSelect;
+        
+        function initializeSpecializationSelect() {
+            if (specializationSelect) {
+                specializationSelect.destroy();
+            }
+            
+            const selectElement = document.getElementById('specialization-select');
+            if (selectElement) {
+                specializationSelect = new TomSelect(selectElement, {
+                    plugins: ['remove_button'],
+                    persist: false,
+                    createOnBlur: true,
+                    create: function(input) {
+                        return {
+                            value: input,
+                            text: input
+                        };
+                    }
+                });
+            }
+        }
 
         function toggleUserTypeFields() {
             const userType = document.getElementById('user_type').value;
-            const adminMentorFields = document.getElementById('admin_mentor_fields');
-            const mentorFields = document.getElementById('mentor_fields');
-            const councillorFields = document.getElementById('councillor_fields');
-            const rbmFields = document.getElementById('rbm_fields');
-
+            
             // Hide all fields first
-            adminMentorFields.style.display = 'none';
-            mentorFields.style.display = 'none';
-            councillorFields.style.display = 'none';
-            rbmFields.style.display = 'none';
-
+            document.getElementById('admin_mentor_fields').style.display = 'none';
+            document.getElementById('mentor_fields').style.display = 'none';
+            document.getElementById('councillor_fields').style.display = 'none';
+            document.getElementById('rbm_fields').style.display = 'none';
+            
             // Show relevant fields based on user type
             if (userType === 'admin' || userType === 'mentor') {
-                adminMentorFields.style.display = 'block';
+                document.getElementById('admin_mentor_fields').style.display = 'block';
+                
                 if (userType === 'mentor') {
-                    mentorFields.style.display = 'block';
-                    
-                    // Initialize Tom Select for specializations when mentor fields are shown
-                    if (!specializationTomSelect && document.getElementById('specialization-select')) {
-                        setTimeout(() => {
-                            specializationTomSelect = new TomSelect("#specialization-select", {
-                                plugins: {
-                                    remove_button: {
-                                        title: "Remove this specialization",
-                                    }
-                                },
-                                allowEmptyOption: false,
-                                placeholder: "Select specializations...",
-                                dropdownDirection: "auto",
-                                maxItems: null,
-                                onInitialize() {
-                                    this.control_input.addEventListener("focus", () =>
-                                        this.wrapper.classList.add("is-focused")
-                                    );
-                                    this.control_input.addEventListener("blur", () =>
-                                        this.wrapper.classList.remove("is-focused")
-                                    );
-                                }
-                            });
-                        }, 100);
-                    }
+                    document.getElementById('mentor_fields').style.display = 'block';
+                    // Initialize Tom Select for specializations
+                    setTimeout(initializeSpecializationSelect, 100);
                 }
             } else if (userType === 'councillor') {
-                councillorFields.style.display = 'block';
-                toggleMOULink(); // Check MOU checkbox state
+                document.getElementById('councillor_fields').style.display = 'block';
+                toggleMOULink();
             } else if (userType === 'rbm') {
-                rbmFields.style.display = 'block';
+                document.getElementById('rbm_fields').style.display = 'block';
             }
         }
 
@@ -641,13 +704,10 @@ if ($_POST) {
             }
         }
 
-        // Initialize form based on current selection
+        // Initialize form on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleUserTypeFields();
-            <?php if (isset($_POST['mou_signed']) && $_POST['mou_signed'] == '1'): ?>
-            toggleMOULink();
-            <?php endif; ?>
         });
     </script>
 </body>
-</html>
+</html> 

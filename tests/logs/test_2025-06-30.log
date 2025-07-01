@@ -1,0 +1,25 @@
+[2025-06-30 14:29:52] [INFO] Initializing test environment...
+[2025-06-30 14:29:52] [ERROR] Fatal error during specific test execution: Failed to copy database structure: SQLSTATE[HY000]: General error: 1005 Can't create table `research_apps_test_db`.`conferences` (errno: 150 "Foreign key constraint is incorrectly formed")
+[2025-06-30 14:29:52] [INFO] Cleaning up test environment...
+[2025-06-30 14:29:52] [INFO] Test environment cleaned up
+[2025-06-30 14:30:51] [INFO] Initializing test environment...
+[2025-06-30 14:30:52] [INFO] Cleaning up test environment...
+[2025-06-30 14:30:52] [INFO] Test environment cleaned up
+[2025-06-30 14:32:00] [INFO] Initializing test environment...
+[2025-06-30 14:32:00] [INFO] Test environment initialized successfully
+[2025-06-30 14:32:00] [TEST] Starting test: Database Connection
+[2025-06-30 14:32:00] [TEST] ✅ Database Connection - PASS
+[2025-06-30 14:32:00] [TEST] Starting test: Table Structure
+[2025-06-30 14:32:00] [TEST] ❌ Table Structure - FAIL (Users table should have 'email' column)
+[2025-06-30 14:32:00] [TEST] Starting test: Foreign Key Constraints
+[2025-06-30 14:32:00] [TEST] ❌ Foreign Key Constraints - FAIL (Foreign key constraint project_students.project_id -> projects should exist)
+[2025-06-30 14:32:00] [TEST] Starting test: Unique Constraints
+[2025-06-30 14:32:00] [TEST] ❌ Unique Constraints - FAIL (SQLSTATE[42S22]: Column not found: 1054 Unknown column 'email' in 'field list')
+[2025-06-30 14:32:00] [TEST] Starting test: Database Triggers
+[2025-06-30 14:32:00] [TEST] ❌ Database Triggers - FAIL (Invalid counselor ID)
+[2025-06-30 14:32:00] [TEST] Starting test: Database Indexes
+[2025-06-30 14:32:00] [TEST] ✅ Database Indexes - PASS
+[2025-06-30 14:32:00] [TEST] Starting test: Data Integrity
+[2025-06-30 14:32:00] [TEST] ❌ Data Integrity - FAIL (SQLSTATE[42S22]: Column not found: 1054 Unknown column 'name' in 'field list')
+[2025-06-30 14:32:00] [INFO] Cleaning up test environment...
+[2025-06-30 14:32:00] [INFO] Test environment cleaned up
