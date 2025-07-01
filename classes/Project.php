@@ -318,12 +318,26 @@ class Project {
     }
     
     // Add new tag
-    public function addTag($tag_name, $color = 'primary') {
-        $query = "INSERT INTO project_tags (tag_name, color) VALUES (:tag_name, :color)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':tag_name', $tag_name);
-        $stmt->bindParam(':color', $color);
-        return $stmt->execute();
+    public function addTag($tag_name, $color = '#007bff') {
+        // Try with tag_color first, fall back to color if that fails
+        try {
+            $query = "INSERT INTO project_tags (tag_name, tag_color) VALUES (:tag_name, :tag_color)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':tag_name', $tag_name);
+            $stmt->bindParam(':tag_color', $color);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            // If tag_color column doesn't exist, try with color column
+            if (strpos($e->getMessage(), 'tag_color') !== false) {
+                $query = "INSERT INTO project_tags (tag_name, color) VALUES (:tag_name, :color)";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':tag_name', $tag_name);
+                $stmt->bindParam(':color', $color);
+                return $stmt->execute();
+            }
+            // If it's a different error, re-throw it
+            throw $e;
+        }
     }
     
     // Assign students to project with better duplicate handling
@@ -424,15 +438,34 @@ class Project {
     
     // Get assigned tags for a project
     public function getAssignedTags($project_id) {
-        $query = "SELECT t.id, t.tag_name, t.tag_color as color
-                  FROM project_tags t
-                  JOIN project_tag_assignments pta ON t.id = pta.tag_id
-                  WHERE pta.project_id = :project_id
-                  ORDER BY t.tag_name";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':project_id', $project_id);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Try with tag_color first, fall back to color if that fails
+        try {
+            $query = "SELECT t.id, t.tag_name, t.tag_color as color
+                      FROM project_tags t
+                      JOIN project_tag_assignments pta ON t.id = pta.tag_id
+                      WHERE pta.project_id = :project_id
+                      ORDER BY t.tag_name";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':project_id', $project_id);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            // If tag_color column doesn't exist, try with color column
+            if (strpos($e->getMessage(), 'tag_color') !== false) {
+                $query = "SELECT t.id, t.tag_name, 
+                                COALESCE(t.color, '#007bff') as color
+                          FROM project_tags t
+                          JOIN project_tag_assignments pta ON t.id = pta.tag_id
+                          WHERE pta.project_id = :project_id
+                          ORDER BY t.tag_name";
+                $stmt = $this->conn->prepare($query);
+                $stmt->bindParam(':project_id', $project_id);
+                $stmt->execute();
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            // If it's a different error, re-throw it
+            throw $e;
+        }
     }
     
     // Get project statistics
