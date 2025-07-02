@@ -73,12 +73,16 @@ if ($_POST) {
         
         // Create student if no errors
         if (empty($errors)) {
-            if ($student->create()) {
-                $success_message = "Student created successfully! Student ID: " . $student->student_id;
-                // Clear form data
-                $_POST = array();
-            } else {
-                $error_message = "Error creating student. Please try again.";
+            try {
+                if ($student->create()) {
+                    $success_message = "Student created successfully! Student ID: " . $student->student_id;
+                    // Clear form data
+                    $_POST = array();
+                } else {
+                    $error_message = "Error creating student. Please try again.";
+                }
+            } catch (Exception $e) {
+                $error_message = "Error creating student: " . $e->getMessage();
             }
         } else {
             $error_message = implode("<br>", $errors);

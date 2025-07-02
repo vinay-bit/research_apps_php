@@ -28,7 +28,8 @@ class Student {
         }
     }
 
-    // Generate unique student ID with better duplicate prevention
+    // Generate unique student ID consistent with database trigger format
+    // NOTE: Currently not used - database trigger handles student_id generation automatically
     private function generateStudentId() {
         $year = date('Y');
         $prefix = 'STU' . $year;
@@ -36,22 +37,25 @@ class Student {
         $attempt = 0;
         
         while ($attempt < $max_attempts) {
-            // Get the last student ID for this year with proper locking
+            // Get the last student ID for this year
             $query = "SELECT student_id FROM " . $this->table_name . " 
                      WHERE student_id LIKE ? 
                      ORDER BY CAST(SUBSTRING(student_id, 8) AS UNSIGNED) DESC 
-                     LIMIT 1 FOR UPDATE";
+                     LIMIT 1";
             
             $stmt = $this->conn->prepare($query);
             $stmt->execute([$prefix . '%']);
             
             if ($stmt->rowCount() > 0) {
                 $last_id = $stmt->fetch(PDO::FETCH_ASSOC)['student_id'];
-                $number = intval(substr($last_id, -4)) + 1;
+                // Extract the numeric part after 'STU' + year (position 8 onwards)
+                $numeric_part = substr($last_id, 7); // Get everything after STU2024
+                $number = intval($numeric_part) + 1;
             } else {
                 $number = 1;
             }
             
+            // Format: STU2024001 (4-digit number)
             $new_id = $prefix . str_pad($number, 4, '0', STR_PAD_LEFT);
             
             // Double-check this ID doesn't exist
@@ -83,16 +87,6 @@ class Student {
             // Start transaction
             $this->conn->beginTransaction();
             
-            // Generate student ID if not provided
-            if (empty($this->student_id)) {
-                $this->student_id = $this->generateStudentId();
-            } else {
-                // If student_id is provided, check if it already exists
-                if ($this->studentIdExists()) {
-                    throw new Exception('Student ID already exists: ' . $this->student_id);
-                }
-            }
-            
             // Validate required fields
             if (empty($this->full_name)) {
                 throw new Exception('Full name is required');
@@ -111,8 +105,10 @@ class Student {
                 throw new Exception('Invalid board ID');
             }
             
+            // Let database trigger handle student_id generation
+            // Don't specify student_id in INSERT - let trigger generate it
             $query = "INSERT INTO " . $this->table_name . " 
-                    SET student_id=:student_id, full_name=:full_name, affiliation=:affiliation, 
+                    SET full_name=:full_name, affiliation=:affiliation, 
                         grade=:grade, counselor_id=:counselor_id, rbm_id=:rbm_id, board_id=:board_id,
                         contact_no=:contact_no, email_address=:email_address, application_year=:application_year";
 
@@ -125,8 +121,7 @@ class Student {
             $this->contact_no = htmlspecialchars(strip_tags($this->contact_no));
             $this->email_address = htmlspecialchars(strip_tags($this->email_address));
 
-            // Bind data
-            $stmt->bindParam(":student_id", $this->student_id);
+            // Bind data (no student_id parameter)
             $stmt->bindParam(":full_name", $this->full_name);
             $stmt->bindParam(":affiliation", $this->affiliation);
             $stmt->bindParam(":grade", $this->grade);
@@ -139,6 +134,10 @@ class Student {
 
             if($stmt->execute()) {
                 $this->id = $this->conn->lastInsertId();
+                
+                // Get the auto-generated student_id from the database trigger
+                $this->readOne();
+                
                 $this->conn->commit();
                 return true;
             } else {

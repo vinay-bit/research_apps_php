@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Apps - User Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin: -2rem -2rem 2rem -2rem;
+            border-radius: 10px 10px 0 0;
+        }
+        .nav {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            position: sticky;
+            top: 20px;
+        }
+        .nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 0;
+            padding: 0;
+        }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s;
+            background: white;
+        }
+        .nav a:hover {
+            background: #667eea;
+            color: white;
+        }
+        .section {
+            margin-bottom: 2rem;
+            padding: 2rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        .section h2 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #667eea;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .feature-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .step-list {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .tip {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .button-demo {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            margin: 0.2rem;
+            font-size: 0.9rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        table th, table td {
+            border: 1px solid #dee2e6;
+            padding: 0.75rem;
+            text-align: left;
+        }
+        table th {
+            background: #667eea;
+            color: white;
+        }
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        @media (max-width: 768px) {
+            .nav ul { flex-direction: column; }
+            .container { padding: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Research Apps User Guide</h1>
+            <p>Complete Documentation & How-To Guide</p>
+        </div>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li><a href="#dashboard">Dashboard</a></li>
+                <li><a href="#students">Student Management</a></li>
+                <li><a href="#projects">Project Management</a></li>
+                <li><a href="#publications">Publications</a></li>
+                <li><a href="#users">User Management</a></li>
+                <li><a href="#workflows">Workflows</a></li>
+                <li><a href="#faq">FAQ</a></li>
+            </ul>
+        </nav>
+
+        <section id="overview" class="section">
+            <h2>System Overview</h2>
+            <p>Research Apps is a comprehensive management system designed to streamline research project workflows, student management, and publication tracking. The system provides tools for managing the entire research lifecycle from student enrollment to publication submission.</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Student Management</h4>
+                    <p>Track student information, applications, counselor assignments, and academic progress throughout their research journey.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Project Management</h4>
+                    <p>Organize research projects, assign mentors and students, track progress, and manage project deliverables.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Publication Workflow</h4>
+                    <p>Manage the publication process from draft submission to conference/journal applications and final publication.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>User Management</h4>
+                    <p>Manage different user roles including administrators, mentors, counselors, and RBMs with appropriate permissions.</p>
+                </div>
+            </div>
+
+            <h3>User Roles</h3>
+            <table>
+                <tr><th>Role</th><th>Permissions</th><th>Primary Functions</th></tr>
+                <tr><td><strong>Admin</strong></td><td>Full system access</td><td>System configuration, user management, all operations</td></tr>
+                <tr><td><strong>Mentor</strong></td><td>Project and student management</td><td>Guide projects, review submissions, track progress</td></tr>
+                <tr><td><strong>Counselor</strong></td><td>Student guidance and oversight</td><td>Student counseling, project recommendations</td></tr>
+                <tr><td><strong>RBM</strong></td><td>Regional management</td><td>Regional coordination, resource allocation</td></tr>
+            </table>
+        </section>
+
+        <section id="getting-started" class="section">
+            <h2>Getting Started</h2>
+            
+            <h3>Accessing the System</h3>
+            <div class="step-list">
+                <ol>
+                    <li>Open your web browser and navigate to the Research Apps URL</li>
+                    <li>You'll be redirected to the login page if not authenticated</li>
+                    <li>Enter your username and password provided by your administrator</li>
+                    <li>Click the "Login" button to access the system</li>
+                </ol>
+            </div>
+
+            <div class="tip">
+                <strong>Tip:</strong> If you forget your password, contact your system administrator for password reset assistance.
+            </div>
+
+            <h3>First Login</h3>
+            <p>Upon your first login, you'll see the main dashboard with navigation options based on your user role:</p>
+            <ul>
+                <li><strong>Top Navigation:</strong> Quick access to main modules</li>
+                <li><strong>Sidebar:</strong> Detailed navigation with sub-modules</li>
+                <li><strong>Dashboard:</strong> Overview statistics and recent activities</li>
+                <li><strong>User Menu:</strong> Profile settings and logout option</li>
+            </ul>
+        </section>
+
+        <section id="dashboard" class="section">
+            <h2>Dashboard Overview</h2>
+            
+            <p>The dashboard serves as your central hub, providing system statistics and quick access to frequently used functions.</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Statistics Cards</h4>
+                    <p>Quick view of total students, projects, publications, and users in the system.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Recent Activities</h4>
+                    <p>Timeline of recent system activities including new registrations and project updates.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Quick Actions</h4>
+                    <p>Shortcut buttons to common tasks like adding new students or creating projects.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>System Alerts</h4>
+                    <p>Important notifications about deadlines, pending approvals, or system updates.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="students" class="section">
+            <h2>Student Management</h2>
+            
+            <p>The Student Management module allows you to maintain comprehensive records of all students participating in research programs.</p>
+
+            <h3>Adding New Students</h3>
+            <div class="step-list">
+                <ol>
+                    <li>Navigate to <strong>Student Management → Add Student</strong></li>
+                    <li>Fill in required information: Full Name, Email, Contact, Affiliation, Grade, Application Year</li>
+                    <li>Assign counselor and RBM from dropdown menus</li>
+                    <li>Select appropriate board if applicable</li>
+                    <li>Click <span class="button-demo">Save Student</span> to create the record</li>
+                </ol>
+            </div>
+
+            <div class="tip">
+                <strong>Tip:</strong> Student IDs are automatically generated in the format STU2025XXXX. You don't need to enter this manually.
+            </div>
+
+            <h3>Student Search and Filtering</h3>
+            <p>The student list provides powerful search and filtering capabilities:</p>
+            
+            <h4>Search Options:</h4>
+            <ul>
+                <li><strong>Text Search:</strong> Search by name, student ID, or email</li>
+                <li><strong>Filter by RBM:</strong> View students assigned to specific RBMs</li>
+                <li><strong>Filter by Counselor:</strong> View students under specific counselors</li>
+                <li><strong>Filter by Year:</strong> View students by application year</li>
+            </ul>
+
+            <div class="step-list">
+                <h4>Using Search and Filters:</h4>
+                <ol>
+                    <li>Go to <strong>Student Management → Student List</strong></li>
+                    <li>Use the search box to enter keywords</li>
+                    <li>Select filters from dropdown menus</li>
+                    <li>Click <span class="button-demo">Search</span> to apply filters</li>
+                    <li>Click <span class="button-demo">Clear</span> to reset all filters</li>
+                </ol>
+            </div>
+
+            <h3>Editing Student Information</h3>
+            <div class="step-list">
+                <ol>
+                    <li>Find the student in the student list</li>
+                    <li>Click the <span class="button-demo">Edit</span> button in the Actions column</li>
+                    <li>Modify the necessary information</li>
+                    <li>Click <span class="button-demo">Update Student</span> to save changes</li>
+                </ol>
+            </div>
+
+            <div class="warning">
+                <strong>Warning:</strong> Only administrators can delete student records. Deletion is permanent and will remove all associated project assignments.
+            </div>
+        </section>
+
+        <section id="projects" class="section">
+            <h2>Project Management</h2>
+            
+            <p>The Project Management module handles the entire lifecycle of research projects from creation to completion.</p>
+
+            <h3>Creating New Projects</h3>
+            <div class="step-list">
+                <ol>
+                    <li>Navigate to <strong>Project Management → Create Project</strong></li>
+                    <li>Enter project details: Name, Description, Subject, Dates, Drive Link, Notes</li>
+                    <li>Set project status from predefined options</li>
+                    <li>Assign lead mentor from available mentors</li>
+                    <li>Select RBM for regional oversight</li>
+                    <li>Assign students to the project</li>
+                    <li>Add relevant tags for categorization</li>
+                    <li>Click <span class="button-demo">Create Project</span> to save</li>
+                </ol>
+            </div>
+
+            <div class="tip">
+                <strong>Tip:</strong> Project IDs are automatically generated in PRJ2025XXXX format. End dates are automatically set to 4 months from start date if not specified.
+            </div>
+
+            <h3>Project Status Management</h3>
+            <p>Projects progress through predefined statuses:</p>
+            <ul>
+                <li><strong>Project Execution - yet to start:</strong> Initial planning phase</li>
+                <li><strong>Project Execution - in progress:</strong> Active development</li>
+                <li><strong>Project Execution - completed:</strong> Development finished</li>
+                <li><strong>Research Paper - in progress:</strong> Writing phase</li>
+                <li><strong>Research Paper - completed:</strong> Ready for publication</li>
+            </ul>
+
+            <h3>Managing Project Assignments</h3>
+            <div class="step-list">
+                <h4>Assigning Students:</h4>
+                <ol>
+                    <li>Open the project for editing</li>
+                    <li>In the "Assigned Students" section, click <span class="button-demo">Select Students</span></li>
+                    <li>Choose multiple students from the available list</li>
+                    <li>Students are automatically assigned the "Team Member" role</li>
+                    <li>Save the project to confirm assignments</li>
+                </ol>
+            </div>
+
+            <h4>Managing Project Tags:</h4>
+            <p>Tags help categorize and filter projects:</p>
+            <ul>
+                <li>Select from existing tags or create new ones</li>
+                <li>Common tags: Research, Innovation, Technology, Science</li>
+                <li>Use tags for filtering in the project list</li>
+            </ul>
+        </section>
+
+        <section id="publications" class="section">
+            <h2>Publications Management</h2>
+            
+            <p>The Publications module manages the complete publication workflow from initial submission to final publication.</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Ready for Publication</h4>
+                    <p>Projects that have completed research and are ready for paper submission.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>In Publication</h4>
+                    <p>Papers currently being reviewed or in the publication process.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Conference Applications</h4>
+                    <p>Track submissions to various conferences with deadlines and status.</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Journal Submissions</h4>
+                    <p>Manage journal publication submissions and review processes.</p>
+                </div>
+            </div>
+
+            <h3>Managing Ready for Publication</h3>
+            <div class="step-list">
+                <ol>
+                    <li>Navigate to <strong>Publications → Ready for Publication</strong></li>
+                    <li>Click <span class="button-demo">Add New Publication</span></li>
+                    <li>Select the completed project from dropdown</li>
+                    <li>Enter publication details: Paper Title, Abstract, Keywords, Domain</li>
+                    <li>Upload documents: First Draft, Plagiarism Report, Final Paper</li>
+                    <li>Assign students involved in the publication</li>
+                    <li>Save the publication record</li>
+                </ol>
+            </div>
+
+            <h3>Conference and Journal Management</h3>
+            <div class="step-list">
+                <h4>Adding Conferences:</h4>
+                <ol>
+                    <li>Go to <strong>Publications → Conferences</strong></li>
+                    <li>Click <span class="button-demo">Add Conference</span></li>
+                    <li>Enter conference information: Name, Deadlines, Location, Website</li>
+                    <li>Set the submission status and save</li>
+                </ol>
+            </div>
+
+            <div class="tip">
+                <strong>Tip:</strong> Use the deadline tracking feature to get alerts about upcoming submission deadlines.
+            </div>
+        </section>
+
+        <section id="users" class="section">
+            <h2>User Management</h2>
+            
+            <p>User Management allows administrators to create and manage user accounts with appropriate roles and permissions.</p>
+
+            <h3>Creating New Users</h3>
+            <div class="step-list">
+                <ol>
+                    <li>Navigate to <strong>User Management → Create User</strong></li>
+                    <li>Select user type: Admin, Mentor, Counselor, RBM</li>
+                    <li>Enter personal information: Name, Username, Password, Email</li>
+                    <li>Add role-specific information: Department, Specialization, Branch</li>
+                    <li>Set account status (Active/Inactive)</li>
+                    <li>Click <span class="button-demo">Create User</span> to save</li>
+                </ol>
+            </div>
+
+            <h3>User Permissions</h3>
+            <table>
+                <tr><th>Permission</th><th>Admin</th><th>Mentor</th><th>Counselor</th><th>RBM</th></tr>
+                <tr><td>View Dashboard</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+                <tr><td>Manage Students</td><td>✓</td><td>View Only</td><td>✓</td><td>View Assigned</td></tr>
+                <tr><td>Manage Projects</td><td>✓</td><td>Assigned Only</td><td>View Only</td><td>View Region</td></tr>
+                <tr><td>User Management</td><td>✓</td><td>✗</td><td>✗</td><td>✗</td></tr>
+            </table>
+        </section>
+
+        <section id="workflows" class="section">
+            <h2>Common Workflows</h2>
+            
+            <h3>Complete Student Research Journey</h3>
+            <div class="step-list">
+                <ol>
+                    <li><strong>Student Registration:</strong> Add student with basic info, assign counselor and RBM</li>
+                    <li><strong>Project Assignment:</strong> Create project, assign mentor and students, set timeline</li>
+                    <li><strong>Project Execution:</strong> Track progress, update status, manage team assignments</li>
+                    <li><strong>Publication Process:</strong> Move to "Ready for Publication", upload papers, submit to venues</li>
+                </ol>
+            </div>
+
+            <h3>Project Status Updates</h3>
+            <div class="step-list">
+                <ol>
+                    <li>Review all active projects weekly</li>
+                    <li>Update project status based on current progress</li>
+                    <li>Add notes about challenges or achievements</li>
+                    <li>Adjust timelines if necessary</li>
+                    <li>Communicate updates to stakeholders</li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="faq" class="section">
+            <h2>Frequently Asked Questions</h2>
+            
+            <h3>Common Issues</h3>
+
+            <div class="tip">
+                <strong>Login Problems:</strong> Verify username and password. Contact administrator if account is locked.
+            </div>
+
+            <div class="warning">
+                <strong>Permission Errors:</strong> Check your user role permissions. Contact administrator for additional access.
+            </div>
+
+            <h3>Questions & Answers</h3>
+            
+            <h4>Q: How do I change my password?</h4>
+            <p>Contact your system administrator for password changes and resets.</p>
+
+            <h4>Q: Can students be assigned to multiple projects?</h4>
+            <p>Yes, students can be assigned to multiple projects simultaneously.</p>
+
+            <h4>Q: How are IDs generated?</h4>
+            <p>IDs are automatically generated: STU2025XXXX for students, PRJ2025XXXX for projects.</p>
+
+            <h3>Getting Help</h3>
+            <div class="tip">
+                <strong>Need Support?</strong> Contact your system administrator for:
+                <ul>
+                    <li>Account issues and password resets</li>
+                    <li>Permission and access problems</li>
+                    <li>Technical difficulties</li>
+                    <li>Feature requests</li>
+                </ul>
+            </div>
+
+            <h3>System Requirements</h3>
+            <ul>
+                <li><strong>Browser:</strong> Modern web browser (Chrome, Firefox, Safari, Edge)</li>
+                <li><strong>Internet:</strong> Stable internet connection</li>
+                <li><strong>JavaScript:</strong> Enabled in browser settings</li>
+                <li><strong>Screen Resolution:</strong> 1024x768 minimum</li>
+            </ul>
+        </section>
+
+        <div style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; margin: 2rem -2rem -2rem -2rem; border-radius: 0 0 10px 10px;">
+            <h2>Thank You for Using Research Apps</h2>
+            <p>This documentation is designed to help you make the most of the Research Apps system.</p>
+            <p style="margin-top: 1rem; opacity: 0.8;">
+                <strong>Version:</strong> 1.0 | <strong>Last Updated:</strong> January 2025
+            </p>
+        </div>
+    </div>
+</body>
+</html>
