@@ -13,7 +13,6 @@ class User {
     public $department_id;
     public $specialization;
     public $organization_id;
-    public $organization_name;
     public $mou_signed;
     public $mou_drive_link;
     public $contact_no;
@@ -34,8 +33,7 @@ class User {
         $query = "INSERT INTO " . $this->table_name . " 
                 SET user_type=:user_type, full_name=:full_name, username=:username, 
                     password=:password, department_id=:department_id, specialization=:specialization,
-                    organization_id=:organization_id, organization_name=:organization_name,
-                    mou_signed=:mou_signed, mou_drive_link=:mou_drive_link, 
+                    organization_id=:organization_id, mou_signed=:mou_signed, mou_drive_link=:mou_drive_link, 
                     contact_no=:contact_no, email_id=:email_id, address=:address,
                     primary_contact_id=:primary_contact_id, councillor_rbm_id=:councillor_rbm_id,
                     branch=:branch, status=:status";
@@ -56,7 +54,6 @@ class User {
         $stmt->bindParam(":department_id", $this->department_id);
         $stmt->bindParam(":specialization", $this->specialization);
         $stmt->bindParam(":organization_id", $this->organization_id);
-        $stmt->bindParam(":organization_name", $this->organization_name);
         $stmt->bindParam(":mou_signed", $this->mou_signed);
         $stmt->bindParam(":mou_drive_link", $this->mou_drive_link);
         $stmt->bindParam(":contact_no", $this->contact_no);
@@ -108,7 +105,6 @@ class User {
             $this->department_id = $row['department_id'];
             $this->specialization = $row['specialization'];
             $this->organization_id = $row['organization_id'];
-            $this->organization_name = $row['organization_name'];
             $this->mou_signed = $row['mou_signed'];
             $this->mou_drive_link = $row['mou_drive_link'];
             $this->contact_no = $row['contact_no'];
@@ -129,8 +125,7 @@ class User {
         $query = "UPDATE " . $this->table_name . " 
                 SET full_name=:full_name, username=:username, user_type=:user_type, department_id=:department_id,
                     specialization=:specialization, organization_id=:organization_id,
-                    organization_name=:organization_name, mou_signed=:mou_signed,
-                    mou_drive_link=:mou_drive_link, contact_no=:contact_no, email_id=:email_id,
+                    mou_signed=:mou_signed, mou_drive_link=:mou_drive_link, contact_no=:contact_no, email_id=:email_id,
                     address=:address, primary_contact_id=:primary_contact_id, 
                     councillor_rbm_id=:councillor_rbm_id, branch=:branch, status=:status
                 WHERE id=:id";
@@ -147,7 +142,6 @@ class User {
         $stmt->bindParam(':department_id', $this->department_id);
         $stmt->bindParam(':specialization', $this->specialization);
         $stmt->bindParam(':organization_id', $this->organization_id);
-        $stmt->bindParam(':organization_name', $this->organization_name);
         $stmt->bindParam(':mou_signed', $this->mou_signed);
         $stmt->bindParam(':mou_drive_link', $this->mou_drive_link);
         $stmt->bindParam(':contact_no', $this->contact_no);

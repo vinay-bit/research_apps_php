@@ -239,7 +239,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                                                     <br>Org: <?php echo htmlspecialchars($user_row['organization_name_ref'] ?? 'N/A'); ?>
                                                                 <?php endif; ?>
                                                             <?php elseif ($user_row['user_type'] == 'councillor'): ?>
-                                                                Org: <?php echo htmlspecialchars($user_row['organization_name'] ?? 'N/A'); ?>
+                                                                Org: <?php echo htmlspecialchars($user_row['organization_name_ref'] ?? 'N/A'); ?>
                                                                 <br>MOU: <?php 
                                                                     if ($user_row['mou_signed'] && !empty($user_row['mou_drive_link'])): ?>
                                                                         <a href="<?php echo htmlspecialchars($user_row['mou_drive_link']); ?>" target="_blank" class="text-success text-decoration-none">

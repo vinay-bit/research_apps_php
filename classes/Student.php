@@ -429,7 +429,7 @@ class Student {
 
     // Get counselors for dropdown
     public function getCounselors() {
-        $query = "SELECT id, full_name, organization_name FROM users WHERE user_type = 'councillor' AND status = 'active' ORDER BY full_name";
+        $query = "SELECT u.id, u.full_name, o.name as organization_name FROM users u LEFT JOIN organizations o ON u.organization_id = o.id WHERE u.user_type = 'councillor' AND u.status = 'active' ORDER BY u.full_name";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

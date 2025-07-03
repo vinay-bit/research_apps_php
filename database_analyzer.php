@@ -482,7 +482,7 @@ class DatabaseAnalyzer {
         $sql[] = "-- Triggers";
         $sql[] = "";
         
-        // Student ID trigger
+        // Student ID trigger (CORRECTED VERSION)
         $sql[] = "-- Student ID generation trigger";
         $sql[] = "DELIMITER //";
         $sql[] = "DROP TRIGGER IF EXISTS generate_student_id//";
@@ -493,17 +493,21 @@ class DatabaseAnalyzer {
         $sql[] = "    DECLARE next_id INT;";
         $sql[] = "    DECLARE current_year INT;";
         $sql[] = "    ";
-        $sql[] = "    SET current_year = YEAR(CURDATE());";
-        $sql[] = "    ";
-        $sql[] = "    SELECT COALESCE(MAX(CAST(SUBSTRING(student_id, 5) AS UNSIGNED)), 0) + 1 INTO next_id";
-        $sql[] = "    FROM students";
-        $sql[] = "    WHERE student_id LIKE CONCAT('STU', current_year, '%');";
-        $sql[] = "    ";
-        $sql[] = "    SET NEW.student_id = CONCAT('STU', current_year, LPAD(next_id, 4, '0'));";
+        $sql[] = "    -- Only generate student_id if not already provided";
+        $sql[] = "    IF NEW.student_id IS NULL OR NEW.student_id = '' THEN";
+        $sql[] = "        SET current_year = YEAR(CURDATE());";
+        $sql[] = "        ";
+        $sql[] = "        -- FIXED: Use position 8 (after STU + year) instead of position 5";
+        $sql[] = "        SELECT COALESCE(MAX(CAST(SUBSTRING(student_id, 8) AS UNSIGNED)), 0) + 1 INTO next_id";
+        $sql[] = "        FROM students";
+        $sql[] = "        WHERE student_id LIKE CONCAT('STU', current_year, '%');";
+        $sql[] = "        ";
+        $sql[] = "        SET NEW.student_id = CONCAT('STU', current_year, LPAD(next_id, 4, '0'));";
+        $sql[] = "    END IF;";
         $sql[] = "END//";
         $sql[] = "";
         
-        // Project ID trigger
+        // Project ID trigger (CORRECTED VERSION)
         $sql[] = "-- Project ID generation trigger";
         $sql[] = "DROP TRIGGER IF EXISTS generate_project_id//";
         $sql[] = "CREATE TRIGGER generate_project_id";
@@ -513,14 +517,19 @@ class DatabaseAnalyzer {
         $sql[] = "    DECLARE next_id INT;";
         $sql[] = "    DECLARE current_year INT;";
         $sql[] = "    ";
-        $sql[] = "    SET current_year = YEAR(CURDATE());";
+        $sql[] = "    -- Only generate project_id if not already provided";
+        $sql[] = "    IF NEW.project_id IS NULL OR NEW.project_id = '' THEN";
+        $sql[] = "        SET current_year = YEAR(CURDATE());";
+        $sql[] = "        ";
+        $sql[] = "        -- FIXED: Use position 8 (after PRJ + year) instead of position 5";
+        $sql[] = "        SELECT COALESCE(MAX(CAST(SUBSTRING(project_id, 8) AS UNSIGNED)), 0) + 1 INTO next_id";
+        $sql[] = "        FROM projects";
+        $sql[] = "        WHERE project_id LIKE CONCAT('PRJ', current_year, '%');";
+        $sql[] = "        ";
+        $sql[] = "        SET NEW.project_id = CONCAT('PRJ', current_year, LPAD(next_id, 4, '0'));";
+        $sql[] = "    END IF;";
         $sql[] = "    ";
-        $sql[] = "    SELECT COALESCE(MAX(CAST(SUBSTRING(project_id, 5) AS UNSIGNED)), 0) + 1 INTO next_id";
-        $sql[] = "    FROM projects";
-        $sql[] = "    WHERE project_id LIKE CONCAT('PRJ', current_year, '%');";
-        $sql[] = "    ";
-        $sql[] = "    SET NEW.project_id = CONCAT('PRJ', current_year, LPAD(next_id, 4, '0'));";
-        $sql[] = "    ";
+        $sql[] = "    -- Auto-generate end date if not provided";
         $sql[] = "    IF NEW.start_date IS NOT NULL AND NEW.end_date IS NULL THEN";
         $sql[] = "        SET NEW.end_date = DATE_ADD(NEW.start_date, INTERVAL 4 MONTH);";
         $sql[] = "    END IF;";

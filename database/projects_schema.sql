@@ -127,7 +127,31 @@ CREATE TABLE IF NOT EXISTS project_students (
     INDEX idx_student (student_id)
 );
 
--- 6. Project-Tags assignment table (many-to-many relationship)
+-- 6. Project-Mentors assignment table (many-to-many relationship)
+CREATE TABLE IF NOT EXISTS project_mentors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    mentor_id INT NOT NULL,
+    assigned_date DATE DEFAULT (CURRENT_DATE),
+    role VARCHAR(100) DEFAULT 'Mentor',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- Foreign key constraints
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (mentor_id) REFERENCES users(id) ON DELETE CASCADE,
+    
+    -- Prevent duplicate assignments
+    UNIQUE KEY unique_project_mentor (project_id, mentor_id),
+    
+    -- Indexes
+    INDEX idx_project (project_id),
+    INDEX idx_mentor (mentor_id),
+    INDEX idx_active (is_active)
+);
+
+-- 7. Project-Tags assignment table (many-to-many relationship)
 CREATE TABLE IF NOT EXISTS project_tag_assignments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,
@@ -146,7 +170,7 @@ CREATE TABLE IF NOT EXISTS project_tag_assignments (
     INDEX idx_tag (tag_id)
 );
 
--- 7. Project Activity Log (for tracking changes)
+-- 8. Project Activity Log (for tracking changes)
 CREATE TABLE IF NOT EXISTS project_activity_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,

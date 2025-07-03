@@ -185,24 +185,6 @@ CREATE TABLE IF NOT EXISTS `project_students` (
   CONSTRAINT `fk_project_students_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Table: project_mentors
-CREATE TABLE IF NOT EXISTS `project_mentors` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `project_id` int(11) NOT NULL,
-  `mentor_id` int(11) NOT NULL,
-  `assigned_date` date DEFAULT (CURDATE()),
-  `role` varchar(100) DEFAULT 'Mentor',
-  `is_active` tinyint(1) DEFAULT 1,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_project_mentor` (`project_id`, `mentor_id`),
-  KEY `idx_project_mentors_active` (`project_id`, `is_active`),
-  KEY `idx_mentor_id` (`mentor_id`),
-  CONSTRAINT `fk_project_mentors_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_project_mentors_mentor` FOREIGN KEY (`mentor_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Table: project_tag_assignments
 CREATE TABLE IF NOT EXISTS `project_tag_assignments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
