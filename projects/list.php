@@ -281,7 +281,8 @@ $current_user = $_SESSION;
                                 <table class="table table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Project Info</th>
+                                            <th style="min-width: 250px;">Project Info</th>
+                                            <th>Assigned Students</th>
                                             <th>Start Date</th>
                                             <th>Deadline</th>
                                             <th>Status</th>
@@ -295,7 +296,7 @@ $current_user = $_SESSION;
                                     <tbody class="table-border-bottom-0">
                                         <?php if (empty($projects)): ?>
                                             <tr>
-                                                <td colspan="9" class="text-center py-4">
+                                                <td colspan="10" class="text-center py-4">
                                                     <div class="empty-state">
                                                         <i class="bx bx-folder-open display-4 text-muted"></i>
                                                         <h5 class="mt-2">No projects found</h5>
@@ -336,15 +337,39 @@ $current_user = $_SESSION;
                                                                     <i class="bx bx-folder"></i>
                                                                 </div>
                                                             </div>
-                                                            <div>
+                                                            <div class="text-wrap">
                                                                 <strong><?php echo htmlspecialchars($proj['project_name']); ?></strong>
                                                                 <br>
                                                                 <small class="text-muted"><?php echo htmlspecialchars($proj['project_id']); ?></small>
-                                                                <?php if ($student_count > 0): ?>
-                                                                    <br><small class="text-info"><?php echo $student_count; ?> student(s) assigned</small>
-                                                                <?php endif; ?>
                                                             </div>
                                                         </div>
+                                                    </td>
+                                                    <td>
+                                                        <?php if (!empty($assigned_students)): ?>
+                                                            <div>
+                                                                <?php foreach ($assigned_students as $index => $student): ?>
+                                                                    <div class="d-flex align-items-center mb-1">
+                                                                        <div class="avatar avatar-xs flex-shrink-0 me-2">
+                                                                            <div class="avatar-initial bg-label-success rounded-circle">
+                                                                                <?php echo strtoupper(substr($student['full_name'], 0, 2)); ?>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="text-wrap">
+                                                                            <small class="fw-semibold"><?php echo htmlspecialchars($student['full_name']); ?></small>
+                                                                            <?php if ($student['grade']): ?>
+                                                                                <br><small class="text-muted">Grade: <?php echo htmlspecialchars($student['grade']); ?></small>
+                                                                            <?php endif; ?>
+                                                                        </div>
+                                                                    </div>
+
+                                                                <?php endforeach; ?>
+                                                            </div>
+                                                        <?php else: ?>
+                                                            <div class="d-flex align-items-center text-muted">
+                                                                <i class="bx bx-user-x me-2"></i>
+                                                                <small>No students assigned</small>
+                                                            </div>
+                                                        <?php endif; ?>
                                                     </td>
                                                     <td>
                                                         <?php if ($proj['start_date']): ?>
@@ -429,7 +454,9 @@ $current_user = $_SESSION;
                                                                         <?php echo strtoupper(substr($proj['mentor_name'], 0, 2)); ?>
                                                                     </div>
                                                                 </div>
-                                                                <span><?php echo htmlspecialchars($proj['mentor_name']); ?></span>
+                                                                <div class="text-wrap">
+                                                                    <span><?php echo htmlspecialchars($proj['mentor_name']); ?></span>
+                                                                </div>
                                                             </div>
                                                         <?php else: ?>
                                                             <span class="text-muted">Not assigned</span>
@@ -449,13 +476,14 @@ $current_user = $_SESSION;
                                                                                 <?php echo strtoupper(substr($mentor['full_name'], 0, 2)); ?>
                                                                             </div>
                                                                         </div>
-                                                                        <div>
+                                                                        <div class="text-wrap">
                                                                             <small class="fw-semibold"><?php echo htmlspecialchars($mentor['full_name']); ?></small>
                                                                             <?php if ($mentor['specialization']): ?>
                                                                                 <br><small class="text-muted"><?php echo htmlspecialchars($mentor['specialization']); ?></small>
                                                                             <?php endif; ?>
                                                                         </div>
                                                                     </div>
+
                                                                 <?php endforeach; ?>
                                                                 <?php if ($mentorCount > $displayLimit): ?>
                                                                     <small class="text-info">+<?php echo $mentorCount - $displayLimit; ?> more mentor<?php echo ($mentorCount - $displayLimit) > 1 ? 's' : ''; ?></small>
@@ -480,7 +508,7 @@ $current_user = $_SESSION;
                                                                         <?php echo strtoupper(substr($proj['rbm_name'], 0, 2)); ?>
                                                                     </div>
                                                                 </div>
-                                                                <div>
+                                                                <div class="text-wrap">
                                                                     <span><?php echo htmlspecialchars($proj['rbm_name']); ?></span>
                                                                     <?php if ($proj['rbm_branch']): ?>
                                                                         <br><small class="text-muted"><?php echo htmlspecialchars($proj['rbm_branch']); ?></small>
@@ -650,6 +678,19 @@ $current_user = $_SESSION;
         .table-hover tbody tr:hover .deadline-cell {
             background-color: rgba(0, 0, 0, 0.02);
             border-radius: 4px;
+        }
+        
+        /* Text wrapping for names and content */
+        .text-wrap {
+            white-space: normal;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Project name column styling */
+        .table th:first-child,
+        .table td:first-child {
+            max-width: 300px;
         }
     </style>
 
