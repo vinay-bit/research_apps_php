@@ -13,6 +13,15 @@ $journal = new Journal();
 $message = '';
 $error = '';
 
+// Handle success messages
+if (isset($_GET['updated']) && $_GET['updated'] == '1') {
+    $message = "Journal updated successfully!";
+} elseif (isset($_GET['added']) && $_GET['added'] == '1') {
+    $message = "Journal added successfully!";
+} elseif (isset($_GET['deleted']) && $_GET['deleted'] == '1') {
+    $message = "Journal deleted successfully!";
+}
+
 // Handle add new journal
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_journal'])) {
     try {
@@ -26,7 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_journal'])) {
         
         $journal_id = $journal->create($data);
         if ($journal_id) {
-            $message = "Journal added successfully!";
+            // Redirect after successful creation
+            header("Location: journals.php?added=1");
+            exit();
         } else {
             $error = "Error creating journal. Please try again.";
         }
@@ -47,7 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_journal'])) {
         ];
         
         if ($journal->update($journal_id, $data)) {
-            $message = "Journal updated successfully!";
+            // Redirect after successful update to prevent modal from reopening
+            header("Location: journals.php?updated=1");
+            exit();
         } else {
             $error = "Error updating journal. Please try again.";
         }
@@ -60,7 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_journal'])) {
 if (isset($_GET['delete']) && is_numeric($_GET['delete']) && hasPermission('admin')) {
     $journal_id = intval($_GET['delete']);
     if ($journal->delete($journal_id)) {
-        $message = "Journal deleted successfully!";
+        // Redirect after successful deletion
+        header("Location: journals.php?deleted=1");
+        exit();
     } else {
         $error = "Error deleting journal. Please try again.";
     }
@@ -548,8 +563,8 @@ $standard_publishers = [
     <script src="../Apps/assets/js/main.js"></script>
 
     <script>
-        // Auto-submit form on filter change
-        document.querySelectorAll('select[name="publisher"], select[name="acceptance"]').forEach(function(select) {
+        // Auto-submit form on filter change (only for filter form, not modal forms)
+        document.querySelectorAll('.card-body form select[name="publisher"], .card-body form select[name="acceptance"]').forEach(function(select) {
             select.addEventListener('change', function() {
                 this.form.submit();
             });

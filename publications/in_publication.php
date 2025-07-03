@@ -105,6 +105,13 @@ $all_conferences = $inPublication->getAllConferences();
 $all_journals = $inPublication->getAllJournals();
 $statistics = $inPublication->getStatistics();
 
+// Debug: Check if journals are loaded properly
+if (empty($all_journals)) {
+    error_log("DEBUG: No journals found in database");
+} else {
+    error_log("DEBUG: Found " . count($all_journals) . " journals");
+}
+
 // Get current user info
 $current_user = $_SESSION;
 ?>
@@ -829,7 +836,7 @@ $current_user = $_SESSION;
 
                                 <!-- Journal Application Modal -->
                                 <div class="modal fade" id="journalModal<?php echo $pub['id']; ?>" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
+                                    <div class="modal-dialog modal-lg">
                                         <div class="modal-content">
                                             <form method="POST">
                                                 <div class="modal-header">
@@ -843,12 +850,16 @@ $current_user = $_SESSION;
                                                         <label class="form-label">Journal <span class="text-danger">*</span></label>
                                                         <select class="form-select" name="journal_id" required>
                                                             <option value="">Select a journal...</option>
-                                                            <?php foreach ($all_journals as $journal): ?>
-                                                                <option value="<?php echo $journal['id']; ?>">
-                                                                    <?php echo htmlspecialchars($journal['journal_name']); ?>
-                                                                    - <?php echo htmlspecialchars($journal['publisher']); ?>
-                                                                </option>
-                                                            <?php endforeach; ?>
+                                                            <?php if (!empty($all_journals)): ?>
+                                                                <?php foreach ($all_journals as $journal): ?>
+                                                                    <option value="<?php echo $journal['id']; ?>">
+                                                                        <?php echo htmlspecialchars($journal['journal_name']); ?>
+                                                                        - <?php echo htmlspecialchars($journal['publisher']); ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            <?php else: ?>
+                                                                <option value="" disabled>No journals available</option>
+                                                            <?php endif; ?>
                                                         </select>
                                                     </div>
                                                     
@@ -1111,6 +1122,41 @@ $current_user = $_SESSION;
                 });
                 row.addEventListener('mouseleave', function() {
                     this.classList.remove('table-active');
+                });
+            });
+        });
+
+        // Debug: Add modal event listeners to catch errors
+        document.addEventListener('DOMContentLoaded', function() {
+            // Listen for modal show events
+            document.querySelectorAll('[id^="journalModal"]').forEach(modal => {
+                modal.addEventListener('show.bs.modal', function(event) {
+                    console.log('Journal modal opening:', event.target.id);
+                });
+                modal.addEventListener('shown.bs.modal', function(event) {
+                    console.log('Journal modal opened successfully:', event.target.id);
+                });
+                modal.addEventListener('hide.bs.modal', function(event) {
+                    console.log('Journal modal closing:', event.target.id);
+                });
+            });
+            
+            // Add error handling for modal button clicks
+            document.querySelectorAll('[data-bs-target^="#journalModal"]').forEach(button => {
+                button.addEventListener('click', function(event) {
+                    try {
+                        console.log('Journal modal button clicked:', event.target.getAttribute('data-bs-target'));
+                        const targetModal = document.querySelector(event.target.getAttribute('data-bs-target'));
+                        if (!targetModal) {
+                            console.error('Journal modal not found:', event.target.getAttribute('data-bs-target'));
+                            event.preventDefault();
+                            alert('Error: Journal modal not found. Please refresh the page and try again.');
+                        }
+                    } catch (error) {
+                        console.error('Error clicking journal modal button:', error);
+                        event.preventDefault();
+                        alert('Error opening journal modal: ' + error.message);
+                    }
                 });
             });
         });

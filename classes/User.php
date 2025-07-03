@@ -139,24 +139,27 @@ class User {
         $stmt->bindParam(':full_name', $this->full_name);
         $stmt->bindParam(':username', $this->username);
         $stmt->bindParam(':user_type', $this->user_type);
-        $stmt->bindParam(':department_id', $this->department_id);
+        $stmt->bindParam(':department_id', $this->department_id, is_null($this->department_id) ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $stmt->bindParam(':specialization', $this->specialization);
-        $stmt->bindParam(':organization_id', $this->organization_id);
-        $stmt->bindParam(':mou_signed', $this->mou_signed);
+        $stmt->bindParam(':organization_id', $this->organization_id, is_null($this->organization_id) ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $stmt->bindParam(':mou_signed', $this->mou_signed, PDO::PARAM_BOOL);
         $stmt->bindParam(':mou_drive_link', $this->mou_drive_link);
         $stmt->bindParam(':contact_no', $this->contact_no);
         $stmt->bindParam(':email_id', $this->email_id);
         $stmt->bindParam(':address', $this->address);
-        $stmt->bindParam(':primary_contact_id', $this->primary_contact_id);
-        $stmt->bindParam(':councillor_rbm_id', $this->councillor_rbm_id);
+        $stmt->bindParam(':primary_contact_id', $this->primary_contact_id, is_null($this->primary_contact_id) ? PDO::PARAM_NULL : PDO::PARAM_INT);
+        $stmt->bindParam(':councillor_rbm_id', $this->councillor_rbm_id, is_null($this->councillor_rbm_id) ? PDO::PARAM_NULL : PDO::PARAM_INT);
         $stmt->bindParam(':branch', $this->branch);
         $stmt->bindParam(':status', $this->status);
-        $stmt->bindParam(':id', $this->id);
+        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
 
         if($stmt->execute()) {
             return true;
+        } else {
+            // Log SQL errors for debugging
+            error_log("SQL Error in User::update(): " . print_r($stmt->errorInfo(), true));
+            return false;
         }
-        return false;
     }
 
     // Delete user

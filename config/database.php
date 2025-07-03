@@ -6,6 +6,12 @@ class Database {
     private $password = '';
     public $conn;
 
+    // private $host = 'localhost';
+    // private $db_name = 'u527896677_research_apps';
+    // private $username = 'u527896677_vinay';
+    // private $password = 'Blockpass@909';
+    // public $conn;
+
     public function getConnection(){
         $this->conn = null;
         try{
