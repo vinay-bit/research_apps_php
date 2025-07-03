@@ -60,6 +60,9 @@ if (isset($_GET['tag']) && !empty($_GET['tag'])) {
 if (isset($_GET['search']) && !empty($_GET['search'])) {
     $filters['search'] = $_GET['search'];
 }
+if (isset($_GET['sort_by']) && !empty($_GET['sort_by'])) {
+    $filters['sort_by'] = $_GET['sort_by'];
+}
 
 // Get data
 $projects = $project->getAll($filters);
@@ -261,10 +264,70 @@ $current_user = $_SESSION;
                                             <?php endforeach; ?>
                                         </select>
                                     </div>
-                                    <div class="col-md-1">
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Sort Section -->
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Sort Projects</h5>
+                                <?php if (isset($_GET['sort_by']) && !empty($_GET['sort_by'])): ?>
+                                    <span class="badge bg-primary">
+                                        <?php 
+                                        $sort_labels = [
+                                            'overdue' => 'Overdue Projects',
+                                            'due_soon' => 'Due Soon (30 days)',
+                                            'deadline_asc' => 'Deadline (Nearest First)',
+                                            'deadline_desc' => 'Deadline (Farthest First)',
+                                            'created_desc' => 'Recently Created'
+                                        ];
+                                        echo $sort_labels[$_GET['sort_by']] ?? 'Active Sort';
+                                        ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="card-body">
+                                <form method="GET" class="row g-3">
+                                    <!-- Preserve existing filters -->
+                                    <input type="hidden" name="search" value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
+                                    <input type="hidden" name="status" value="<?php echo isset($_GET['status']) ? htmlspecialchars($_GET['status']) : ''; ?>">
+                                    <input type="hidden" name="mentor" value="<?php echo isset($_GET['mentor']) ? htmlspecialchars($_GET['mentor']) : ''; ?>">
+                                    <input type="hidden" name="rbm" value="<?php echo isset($_GET['rbm']) ? htmlspecialchars($_GET['rbm']) : ''; ?>">
+                                    <input type="hidden" name="tag" value="<?php echo isset($_GET['tag']) ? htmlspecialchars($_GET['tag']) : ''; ?>">
+                                    
+                                    <div class="col-md-4">
+                                        <label class="form-label">Sort by Timeline</label>
+                                        <select class="form-select" name="sort_by">
+                                            <option value="">Default (Latest)</option>
+                                            <option value="overdue" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'overdue') ? 'selected' : ''; ?>>
+                                                <i class="bx bx-exclamation-circle"></i> Overdue Projects
+                                            </option>
+                                            <option value="due_soon" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'due_soon') ? 'selected' : ''; ?>>
+                                                <i class="bx bx-alarm"></i> Due Soon (30 days)
+                                            </option>
+                                            <option value="deadline_asc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'deadline_asc') ? 'selected' : ''; ?>>
+                                                <i class="bx bx-calendar"></i> Deadline (Nearest First)
+                                            </option>
+                                            <option value="deadline_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'deadline_desc') ? 'selected' : ''; ?>>
+                                                <i class="bx bx-calendar-check"></i> Deadline (Farthest First)
+                                            </option>
+                                            <option value="created_desc" <?php echo (isset($_GET['sort_by']) && $_GET['sort_by'] == 'created_desc') ? 'selected' : ''; ?>>
+                                                <i class="bx bx-time"></i> Recently Created
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
                                         <label class="form-label">&nbsp;</label>
                                         <div>
-                                            <button type="submit" class="btn btn-primary">Filter</button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bx bx-sort me-1"></i> Sort
+                                            </button>
+                                            <?php if (isset($_GET['sort_by']) && !empty($_GET['sort_by'])): ?>
+                                                <a href="?<?php echo http_build_query(array_diff_key($_GET, ['sort_by' => ''])); ?>" class="btn btn-outline-secondary ms-2">
+                                                    <i class="bx bx-x me-1"></i> Clear Sort
+                                                </a>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                 </form>
@@ -697,6 +760,13 @@ $current_user = $_SESSION;
     <script>
         // Auto-submit form on filter change
         document.querySelectorAll('select[name="status"], select[name="mentor"], select[name="rbm"], select[name="tag"]').forEach(function(select) {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
+        
+        // Auto-submit form on sort change
+        document.querySelectorAll('select[name="sort_by"]').forEach(function(select) {
             select.addEventListener('change', function() {
                 this.form.submit();
             });

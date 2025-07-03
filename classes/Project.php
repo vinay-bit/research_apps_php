@@ -157,7 +157,45 @@ class Project {
             $params[':search'] = '%' . $filters['search'] . '%';
         }
         
-        $query .= " ORDER BY p.created_at DESC";
+        // Handle sorting by deadline
+        if (!empty($filters['sort_by'])) {
+            switch ($filters['sort_by']) {
+                case 'overdue':
+                    $query .= " ORDER BY CASE 
+                                    WHEN p.end_date IS NULL THEN 1 
+                                    WHEN p.end_date < CURDATE() THEN 0 
+                                    ELSE 1 
+                                END, p.end_date ASC";
+                    break;
+                case 'due_soon':
+                    $query .= " ORDER BY CASE 
+                                    WHEN p.end_date IS NULL THEN 1 
+                                    WHEN p.end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 0 
+                                    ELSE 1 
+                                END, p.end_date ASC";
+                    break;
+                case 'deadline_asc':
+                    $query .= " ORDER BY CASE 
+                                    WHEN p.end_date IS NULL THEN 1 
+                                    ELSE 0 
+                                END, p.end_date ASC";
+                    break;
+                case 'deadline_desc':
+                    $query .= " ORDER BY CASE 
+                                    WHEN p.end_date IS NULL THEN 1 
+                                    ELSE 0 
+                                END, p.end_date DESC";
+                    break;
+                case 'created_desc':
+                    $query .= " ORDER BY p.created_at DESC";
+                    break;
+                default:
+                    $query .= " ORDER BY p.created_at DESC";
+                    break;
+            }
+        } else {
+            $query .= " ORDER BY p.created_at DESC";
+        }
         
         $stmt = $this->conn->prepare($query);
         foreach ($params as $key => $value) {
