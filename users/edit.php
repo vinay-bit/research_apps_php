@@ -35,7 +35,6 @@ $original_user_data = [
     'department_id' => $user->department_id,
     'specialization' => $user->specialization,
     'organization_id' => $user->organization_id,
-    'organization_name' => $user->organization_name,
     'mou_signed' => $user->mou_signed,
     'mou_drive_link' => $user->mou_drive_link,
     'contact_no' => $user->contact_no,
@@ -114,7 +113,6 @@ if ($_POST) {
                 $user->department_id = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
                 $user->specialization = null;
                 $user->organization_id = null;
-                $user->organization_name = null;
                 $user->mou_signed = false;
                 $user->mou_drive_link = null;
                 $user->contact_no = null;
@@ -133,7 +131,6 @@ if ($_POST) {
                 if (!empty($_POST['organization_id']) && $_POST['organization_id'] !== 'other') {
                     // Existing organization selected
                     $user->organization_id = intval($_POST['organization_id']);
-                    $user->organization_name = null;
                 } elseif ($_POST['organization_id'] === 'other' && !empty($_POST['new_organization_name'])) {
                     // New organization needs to be created
                     $new_org_name = trim($_POST['new_organization_name']);
@@ -159,11 +156,9 @@ if ($_POST) {
                             $error_message = "Error creating new organization. Please try again.";
                         }
                     }
-                    $user->organization_name = null;
                 } else {
                     // No organization selected
                     $user->organization_id = null;
-                    $user->organization_name = null;
                 }
                 $user->mou_signed = false;
                 $user->mou_drive_link = null;
@@ -181,7 +176,6 @@ if ($_POST) {
                 if (!empty($_POST['organization_id']) && $_POST['organization_id'] !== 'other') {
                     // Existing organization selected
                     $user->organization_id = intval($_POST['organization_id']);
-                    $user->organization_name = null;
                 } elseif ($_POST['organization_id'] === 'other' && !empty($_POST['new_organization_name'])) {
                     // New organization needs to be created
                     $new_org_name = trim($_POST['new_organization_name']);
@@ -207,11 +201,9 @@ if ($_POST) {
                             $error_message = "Error creating new organization. Please try again.";
                         }
                     }
-                    $user->organization_name = null;
                 } else {
                     // No organization selected
                     $user->organization_id = null;
-                    $user->organization_name = null;
                 }
                 
                 $user->mou_signed = isset($_POST['mou_signed']) && $_POST['mou_signed'] == '1';
@@ -226,7 +218,6 @@ if ($_POST) {
                 $user->department_id = null;
                 $user->specialization = null;
                 $user->organization_id = null;
-                $user->organization_name = null;
                 $user->mou_signed = false;
                 $user->mou_drive_link = null;
                 $user->contact_no = null;
@@ -251,7 +242,6 @@ if ($_POST) {
                     'department_id' => $user->department_id,
                     'specialization' => $user->specialization,
                     'organization_id' => $user->organization_id,
-                    'organization_name' => $user->organization_name,
                     'mou_signed' => $user->mou_signed,
                     'mou_drive_link' => $user->mou_drive_link,
                     'contact_no' => $user->contact_no,
@@ -679,34 +669,71 @@ if ($_POST) {
         function toggleNewOrganizationField() {
             const organizationSelect = document.getElementById('organization_id');
             const newOrgField = document.getElementById('new_organization_field');
+            const newOrgInput = document.getElementById('new_organization_name');
             
             if (organizationSelect.value === 'other') {
                 newOrgField.style.display = 'block';
-                document.getElementById('new_organization_name').required = true;
+                newOrgInput.required = true;
             } else {
                 newOrgField.style.display = 'none';
-                document.getElementById('new_organization_name').required = false;
-                document.getElementById('new_organization_name').value = '';
+                newOrgInput.required = false;
+                newOrgInput.value = '';
             }
         }
 
         function toggleNewOrganizationFieldCouncillor() {
             const organizationSelect = document.getElementById('organization_id_councillor');
             const newOrgField = document.getElementById('new_organization_field_councillor');
+            const newOrgInput = document.getElementById('new_organization_name_councillor');
             
             if (organizationSelect.value === 'other') {
                 newOrgField.style.display = 'block';
-                document.getElementById('new_organization_name_councillor').required = true;
+                newOrgInput.required = true;
             } else {
                 newOrgField.style.display = 'none';
-                document.getElementById('new_organization_name_councillor').required = false;
-                document.getElementById('new_organization_name_councillor').value = '';
+                newOrgInput.required = false;
+                newOrgInput.value = '';
             }
         }
 
+        // Handle form submission to ensure only the active organization field is submitted
+        function handleFormSubmission(event) {
+            const userType = document.getElementById('user_type').value;
+            const mentorOrgField = document.getElementById('organization_id');
+            const councillorOrgField = document.getElementById('organization_id_councillor');
+            const mentorNewOrgField = document.getElementById('new_organization_name');
+            const councillorNewOrgField = document.getElementById('new_organization_name_councillor');
+            
+            // Clear the inactive organization fields to prevent conflicts
+            if (userType === 'mentor') {
+                // Clear councillor fields
+                if (councillorOrgField) councillorOrgField.value = '';
+                if (councillorNewOrgField) councillorNewOrgField.value = '';
+            } else if (userType === 'councillor') {
+                // Clear mentor fields
+                if (mentorOrgField) mentorOrgField.value = '';
+                if (mentorNewOrgField) mentorNewOrgField.value = '';
+            } else {
+                // For admin and rbm, clear all organization fields
+                if (mentorOrgField) mentorOrgField.value = '';
+                if (councillorOrgField) councillorOrgField.value = '';
+                if (mentorNewOrgField) mentorNewOrgField.value = '';
+                if (councillorNewOrgField) councillorNewOrgField.value = '';
+            }
+            
+            // Allow form submission to continue
+            return true;
+        }
+        
         // Initialize form on page load
         document.addEventListener('DOMContentLoaded', function() {
             toggleUserTypeFields();
+            
+            // Add form submission handler
+            const form = document.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', handleFormSubmission);
+            }
         });
     </script>
 </body>

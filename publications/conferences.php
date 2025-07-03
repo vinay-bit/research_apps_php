@@ -263,7 +263,7 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                                 <h5 class="mb-0">Filter Conferences</h5>
                             </div>
                             <div class="card-body">
-                                <form method="GET" class="row g-3">
+                                <form method="GET" class="row g-3" id="filterForm">
                                     <div class="col-md-4">
                                         <label class="form-label">Search</label>
                                         <input type="text" class="form-control" name="search" placeholder="Conference name or shortform..." value="<?php echo isset($_GET['search']) ? htmlspecialchars($_GET['search']) : ''; ?>">
@@ -642,8 +642,8 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     <script src="../Apps/assets/js/main.js"></script>
 
     <script>
-        // Auto-submit form on filter change
-        document.querySelectorAll('select[name="affiliation"], select[name="type"]').forEach(function(select) {
+        // Auto-submit form on filter change (only for filter form, not modal forms)
+        document.querySelectorAll('#filterForm select[name="affiliation"], #filterForm select[name="type"]').forEach(function(select) {
             select.addEventListener('change', function() {
                 this.form.submit();
             });

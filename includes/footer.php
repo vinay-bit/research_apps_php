@@ -5,7 +5,7 @@
             <a href="#" target="_blank" class="footer-link fw-bolder">OMOTEC</a> - Learn Tech For Future
         </div>
         <div>
-            <a href="#" class="footer-link me-4" target="_blank">Documentation</a>
+            <a href="/documentation.html" class="footer-link me-4" target="_blank">Documentation</a>
             <a href="#" target="_blank" class="footer-link me-4">Support</a>
         </div>
     </div>

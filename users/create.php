@@ -53,9 +53,7 @@ if ($_POST) {
             if ($user_type == 'admin') {
                 $user->department_id = !empty($_POST['department_id']) ? $_POST['department_id'] : null;
                 $user->specialization = null;
-                $user->organization_id = null;
-                $user->organization_name = null;
-                $user->mou_signed = false;
+                $user->organization_id = null;$user->mou_signed = false;
                 $user->mou_drive_link = null;
                 $user->contact_no = null;
                 $user->email_id = null;
@@ -73,7 +71,6 @@ if ($_POST) {
                 if (!empty($_POST['organization_id']) && $_POST['organization_id'] !== 'other') {
                     // Existing organization selected
                     $user->organization_id = intval($_POST['organization_id']);
-                    $user->organization_name = null;
                 } elseif ($_POST['organization_id'] === 'other' && !empty($_POST['new_organization_name'])) {
                     // New organization needs to be created
                     $new_org_name = trim($_POST['new_organization_name']);
@@ -98,13 +95,9 @@ if ($_POST) {
                         } else {
                             $error_message = "Error creating new organization. Please try again.";
                         }
-                    }
-                    $user->organization_name = null;
-                } else {
+                    }} else {
                     // No organization selected
-                    $user->organization_id = null;
-                    $user->organization_name = null;
-                }
+                    $user->organization_id = null;}
                 $user->mou_signed = false;
                 $user->mou_drive_link = null;
                 $user->contact_no = null;
@@ -121,7 +114,6 @@ if ($_POST) {
                 if (!empty($_POST['organization_id']) && $_POST['organization_id'] !== 'other') {
                     // Existing organization selected
                     $user->organization_id = intval($_POST['organization_id']);
-                    $user->organization_name = null;
                 } elseif ($_POST['organization_id'] === 'other' && !empty($_POST['new_organization_name'])) {
                     // New organization needs to be created
                     $new_org_name = trim($_POST['new_organization_name']);
@@ -147,11 +139,9 @@ if ($_POST) {
                             $error_message = "Error creating new organization. Please try again.";
                         }
                     }
-                    $user->organization_name = null;
                 } else {
                     // No organization selected
                     $user->organization_id = null;
-                    $user->organization_name = null;
                 }
                 
                 $user->mou_signed = isset($_POST['mou_signed']) && $_POST['mou_signed'] == '1';
@@ -166,7 +156,6 @@ if ($_POST) {
                 $user->department_id = null;
                 $user->specialization = null;
                 $user->organization_id = null;
-                $user->organization_name = null;
                 $user->mou_signed = false;
                 $user->mou_drive_link = null;
                 $user->contact_no = null;
