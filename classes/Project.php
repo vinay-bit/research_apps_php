@@ -128,7 +128,7 @@ class Project {
             $query .= " INNER JOIN project_tag_assignments pta ON p.id = pta.project_id";
         }
         
-        $query .= " WHERE 1 = 1";
+        $query .= " WHERE ps.status_name != 'Project Execution - completed'";
         
         // Apply filters
         $params = [];
@@ -510,24 +510,32 @@ class Project {
     public function getStatistics() {
         $stats = [];
         
-        // Total projects
-        $query = "SELECT COUNT(*) as total FROM projects";
+        // Total projects (excluding completed)
+        $query = "SELECT COUNT(*) as total 
+                  FROM projects p
+                  JOIN project_statuses ps ON p.status_id = ps.id
+                  WHERE ps.status_name != 'Project Execution - completed'";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $stats['total_projects'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
-        // Projects by status
+        // Projects by status (excluding completed)
         $query = "SELECT ps.status_name, COUNT(*) as count
                   FROM projects p
                   JOIN project_statuses ps ON p.status_id = ps.id
+                  WHERE ps.status_name != 'Project Execution - completed'
                   GROUP BY ps.status_name
                   ORDER BY ps.id";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $stats['by_status'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Projects with prototypes
-        $query = "SELECT COUNT(*) as total FROM projects WHERE has_prototype = 'Yes'";
+        // Projects with prototypes (excluding completed)
+        $query = "SELECT COUNT(*) as total 
+                  FROM projects p
+                  JOIN project_statuses ps ON p.status_id = ps.id
+                  WHERE has_prototype = 'Yes' 
+                  AND ps.status_name != 'Project Execution - completed'";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $stats['with_prototypes'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
@@ -745,6 +753,32 @@ class Project {
         $stmt->execute();
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Get completed projects statistics
+    public function getCompletedStatistics() {
+        $stats = [];
+        
+        // Total completed projects
+        $query = "SELECT COUNT(*) as total 
+                  FROM projects p
+                  JOIN project_statuses ps ON p.status_id = ps.id
+                  WHERE ps.status_name = 'Project Execution - completed'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $stats['total_completed'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        // Completed projects with prototypes
+        $query = "SELECT COUNT(*) as total 
+                  FROM projects p
+                  JOIN project_statuses ps ON p.status_id = ps.id
+                  WHERE ps.status_name = 'Project Execution - completed' 
+                  AND has_prototype = 'Yes'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $stats['with_prototypes'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        return $stats;
     }
     
     // Move completed project back to active (in progress)

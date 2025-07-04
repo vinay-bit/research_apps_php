@@ -150,6 +150,9 @@ $current_user = $_SESSION;
                                             <span class="text-muted fw-light">Project Management /</span> All Projects
                                         </h5>
                                         <div>
+                                            <a href="/projects/completed.php" class="btn btn-outline-success me-2">
+                                                <i class="bx bx-check-circle me-1"></i> View Completed Projects
+                                            </a>
                                             <a href="/projects/create.php" class="btn btn-primary">
                                                 <i class="bx bx-plus me-1"></i> Create New Project
                                             </a>
@@ -225,9 +228,11 @@ $current_user = $_SESSION;
                                         <select class="form-select" name="status">
                                             <option value="">All Statuses</option>
                                             <?php foreach ($statuses as $status): ?>
+                                                <?php if ($status['status_name'] != 'Project Execution - completed'): ?>
                                                 <option value="<?php echo $status['id']; ?>" <?php echo (isset($_GET['status']) && $_GET['status'] == $status['id']) ? 'selected' : ''; ?>>
                                                     <?php echo htmlspecialchars($status['status_name']); ?>
                                                 </option>
+                                                <?php endif; ?>
                                             <?php endforeach; ?>
                                         </select>
                                     </div>

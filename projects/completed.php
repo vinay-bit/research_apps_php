@@ -42,8 +42,9 @@ $mentors = $project->getMentors();
 $rbms = $project->getRBMs();
 
 // Get statistics
-$total_completed = count($completed_projects);
-$with_prototypes = count(array_filter($completed_projects, function($p) { return $p['has_prototype'] == 'Yes'; }));
+$completed_stats = $project->getCompletedStatistics();
+$total_completed = $completed_stats['total_completed'];
+$with_prototypes = $completed_stats['with_prototypes'];
 
 // Get current user info
 $current_user = $_SESSION;
@@ -242,7 +243,8 @@ $current_user = $_SESSION;
                                             <tr>
                                                 <th>Project Details</th>
                                                 <th>Mentor & RBM</th>
-                                                <th>Completion Info</th>
+                                                <th>Completion Date</th>
+                                                <th>Project Timeline</th>
                                                 <th>Prototype</th>
                                                 <?php if (hasPermission('admin')): ?>
                                                 <th>Actions</th>
@@ -278,11 +280,19 @@ $current_user = $_SESSION;
                                                                 <?php endif; ?>
                                                                 <?php if ($student_count > 0): ?>
                                                                     <br><small class="text-primary"><?php echo $student_count; ?> student(s) assigned</small>
+                                                                    <div class="mt-1">
+                                                                        <?php foreach ($assigned_students as $student): ?>
+                                                                            <span class="badge bg-light text-dark me-1">
+                                                                                <i class="bx bx-user me-1"></i>
+                                                                                <?php echo htmlspecialchars($student['full_name']); ?>
+                                                                            </span>
+                                                                        <?php endforeach; ?>
+                                                                    </div>
                                                                 <?php endif; ?>
                                                                 <?php if (!empty($assigned_tags)): ?>
                                                                     <div class="mt-1">
                                                                         <?php foreach ($assigned_tags as $tag): ?>
-                                                                            <span class="badge bg-<?php echo $tag['color']; ?> me-1"><?php echo htmlspecialchars($tag['tag_name']); ?></span>
+                                                                            <span class="badge bg-<?php echo $tag['color']; ?> text-dark me-1"><?php echo htmlspecialchars($tag['tag_name']); ?></span>
                                                                         <?php endforeach; ?>
                                                                     </div>
                                                                 <?php endif; ?>
@@ -307,13 +317,50 @@ $current_user = $_SESSION;
                                                         <?php endif; ?>
                                                     </td>
                                                     <td>
-                                                        <span class="badge bg-success">Completed</span>
                                                         <?php if (!empty($proj['completion_date'])): ?>
-                                                            <br><small class="text-muted">Completed: <?php echo date('M j, Y', strtotime($proj['completion_date'])); ?></small>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="avatar flex-shrink-0 me-2">
+                                                                    <div class="avatar-initial bg-success rounded">
+                                                                        <i class="bx bx-calendar-check text-white"></i>
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <strong class="text-success"><?php echo date('M j, Y', strtotime($proj['completion_date'])); ?></strong>
+                                                                    <br><small class="text-muted"><?php echo date('l', strtotime($proj['completion_date'])); ?></small>
+                                                                </div>
+                                                            </div>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">Not specified</span>
                                                         <?php endif; ?>
-                                                        <?php if (!empty($proj['start_date'])): ?>
-                                                            <br><small class="text-muted">Started: <?php echo date('M j, Y', strtotime($proj['start_date'])); ?></small>
-                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <div class="small">
+                                                            <?php if (!empty($proj['start_date'])): ?>
+                                                                <div class="mb-1">
+                                                                    <i class="bx bx-play-circle text-primary me-1"></i>
+                                                                    <strong>Started:</strong> <?php echo date('M j, Y', strtotime($proj['start_date'])); ?>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($proj['end_date'])): ?>
+                                                                <div class="mb-1">
+                                                                    <i class="bx bx-calendar-x text-warning me-1"></i>
+                                                                    <strong>Deadline:</strong> <?php echo date('M j, Y', strtotime($proj['end_date'])); ?>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($proj['completion_date']) && !empty($proj['end_date'])): ?>
+                                                                <?php 
+                                                                $deadline = new DateTime($proj['end_date']);
+                                                                $completion = new DateTime($proj['completion_date']);
+                                                                $diff = $deadline->diff($completion);
+                                                                $days_diff = $completion > $deadline ? $diff->days . ' days late' : $diff->days . ' days early';
+                                                                $status_class = $completion > $deadline ? 'text-danger' : 'text-success';
+                                                                ?>
+                                                                <div class="<?php echo $status_class; ?>">
+                                                                    <i class="bx bx-time me-1"></i>
+                                                                    <strong><?php echo $days_diff; ?></strong>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         <span class="badge bg-<?php echo ($proj['has_prototype'] == 'Yes') ? 'success' : 'secondary'; ?>">
