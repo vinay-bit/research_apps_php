@@ -115,7 +115,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <span class="menu-header-text">Project Management</span>
         </li>
         
-        <li class="menu-item <?php echo (strpos($current_page, 'project') !== false) ? 'active open' : ''; ?>">
+        <li class="menu-item <?php echo (strpos($current_page, 'project') !== false || $current_page == 'completed.php') ? 'active open' : ''; ?>">
             <a href="javascript:void(0);" class="menu-link menu-toggle">
                 <i class="menu-icon tf-icons bx bx-folder"></i>
                 <div data-i18n="Projects">Projects</div>
@@ -129,6 +129,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <li class="menu-item <?php echo ($current_page == 'create.php' && strpos($_SERVER['REQUEST_URI'], 'projects') !== false) ? 'active' : ''; ?>">
                     <a href="/projects/create.php" class="menu-link">
                         <div data-i18n="Create Project">Create Project</div>
+                    </a>
+                </li>
+                <li class="menu-item <?php echo ($current_page == 'completed.php' && strpos($_SERVER['REQUEST_URI'], 'projects') !== false) ? 'active' : ''; ?>">
+                    <a href="/projects/completed.php" class="menu-link">
+                        <div data-i18n="Completed Projects">Completed Projects</div>
                     </a>
                 </li>
             </ul>

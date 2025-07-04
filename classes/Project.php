@@ -698,6 +698,83 @@ class Project {
         return $this->assignTags($project_id, $tag_ids);
     }
     
+    // Get completed projects (Project Execution - completed only)
+    public function getCompletedProjects($filters = []) {
+        $query = "SELECT p.*, 
+                         ps.status_name,
+                         s.subject_name,
+                         mentor.full_name as mentor_name,
+                         rbm.full_name as rbm_name,
+                         rbm.branch as rbm_branch
+                  FROM " . $this->table_name . " p
+                  LEFT JOIN project_statuses ps ON p.status_id = ps.id
+                  LEFT JOIN subjects s ON p.subject_id = s.id
+                  LEFT JOIN users mentor ON p.lead_mentor_id = mentor.id
+                  LEFT JOIN users rbm ON p.rbm_id = rbm.id
+                  WHERE ps.status_name = 'Project Execution - completed'";
+        
+        $params = [];
+        
+        // Add search filter
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $query .= " AND (p.project_name LIKE :search OR p.project_id LIKE :search OR p.description LIKE :search)";
+            $params[':search'] = '%' . $filters['search'] . '%';
+        }
+        
+        // Add mentor filter
+        if (isset($filters['lead_mentor_id']) && !empty($filters['lead_mentor_id'])) {
+            $query .= " AND p.lead_mentor_id = :lead_mentor_id";
+            $params[':lead_mentor_id'] = $filters['lead_mentor_id'];
+        }
+        
+        // Add RBM filter
+        if (isset($filters['rbm_id']) && !empty($filters['rbm_id'])) {
+            $query .= " AND p.rbm_id = :rbm_id";
+            $params[':rbm_id'] = $filters['rbm_id'];
+        }
+        
+        // Add sorting
+        $sort_by = $filters['sort_by'] ?? 'completion_date';
+        $sort_order = ($sort_by == 'completion_date') ? 'DESC' : 'ASC';
+        $query .= " ORDER BY " . $sort_by . " " . $sort_order;
+        
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Move completed project back to active (in progress)
+    public function moveBackToActive($project_id) {
+        // Get the status ID for "Project Execution - in progress"
+        $status_query = "SELECT id FROM project_statuses WHERE status_name = 'Project Execution - in progress' LIMIT 1";
+        $status_stmt = $this->conn->prepare($status_query);
+        $status_stmt->execute();
+        $status_result = $status_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$status_result) {
+            return false;
+        }
+        
+        $in_progress_status_id = $status_result['id'];
+        
+        // Update the project status and clear completion date
+        $query = "UPDATE " . $this->table_name . " 
+                  SET status_id = :status_id, 
+                      completion_date = NULL,
+                      updated_at = CURRENT_TIMESTAMP
+                  WHERE id = :project_id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':status_id', $in_progress_status_id);
+        $stmt->bindParam(':project_id', $project_id);
+        
+        return $stmt->execute();
+    }
+
     // Update project method that accepts project_id and data array
     public function updateProject($project_id, $data) {
         // Get current project data first
