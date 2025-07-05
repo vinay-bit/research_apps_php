@@ -24,11 +24,21 @@ $current_year = isset($_GET['year']) ? intval($_GET['year']) : date('Y');
 $current_month = isset($_GET['month']) ? intval($_GET['month']) : date('n');
 $selected_project = isset($_GET['project']) ? intval($_GET['project']) : null;
 
-// Get mentor's projects
-$mentor_projects = $timesheet->getMentorProjects($_SESSION['user_id']);
-
-// Get calendar data
-$calendar_data = $timesheet->getCalendarData($_SESSION['user_id'], $current_year, $current_month, $selected_project);
+// Get projects based on user type
+if ($_SESSION['user_type'] === 'admin') {
+    // Admin can see all projects or filter by mentor
+    $selected_mentor = isset($_GET['mentor']) ? intval($_GET['mentor']) : null;
+    if ($selected_mentor) {
+        $mentor_projects = $timesheet->getProjectsByMentor($selected_mentor);
+    } else {
+        $mentor_projects = $project->getAll();
+    }
+    $calendar_data = $timesheet->getCalendarData($selected_mentor, $current_year, $current_month, $selected_project);
+} else {
+    // Mentor can only see their assigned projects
+    $mentor_projects = $timesheet->getMentorProjects($_SESSION['user_id']);
+    $calendar_data = $timesheet->getCalendarData($_SESSION['user_id'], $current_year, $current_month, $selected_project);
+}
 
 // Get activities for dropdown
 $activities = $timesheet->getActivities();
@@ -42,15 +52,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
     try {
         switch ($_POST['action']) {
+            case 'get_projects_by_mentor':
+                $mentor_id = $_POST['mentor_id'];
+                $projects = $timesheet->getProjectsByMentor($mentor_id);
+                echo json_encode(['success' => true, 'data' => $projects]);
+                exit;
+                
             case 'get_entries':
                 $date = $_POST['date'];
-                $entries = $timesheet->getEntriesByDate($_SESSION['user_id'], $date, $selected_project);
+                $mentor_id = $_SESSION['user_type'] === 'admin' ? ($_POST['mentor_id'] ?? null) : $_SESSION['user_id'];
+                $entries = $timesheet->getEntriesByDate($mentor_id, $date, $selected_project);
                 echo json_encode(['success' => true, 'data' => $entries]);
                 exit;
                 
             case 'add_entry':
                 $timesheet->project_id = $_POST['project_id'];
-                $timesheet->mentor_id = $_SESSION['user_id'];
+                $timesheet->mentor_id = $_SESSION['user_type'] === 'admin' ? $_POST['mentor_id'] : $_SESSION['user_id'];
                 $timesheet->entry_date = $_POST['entry_date'];
                 $timesheet->start_time = $_POST['start_time'];
                 $timesheet->end_time = $_POST['end_time'];
@@ -294,7 +311,10 @@ foreach ($calendar_data as $entry) {
                                 <div class="card">
                                     <div class="card-body">
                                         <form method="GET" class="row g-3">
-                                            <div class="col-md-3">
+                                            <?php if ($_SESSION['user_type'] === 'admin' && $selected_mentor): ?>
+                                            <input type="hidden" name="mentor" value="<?php echo $selected_mentor; ?>">
+                                            <?php endif; ?>
+                                            <div class="col-md-2">
                                                 <label class="form-label">Month/Year</label>
                                                 <div class="d-flex gap-2">
                                                     <select name="month" class="form-select">
@@ -313,7 +333,23 @@ foreach ($calendar_data as $entry) {
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="col-md-4">
+                                            <?php if ($_SESSION['user_type'] === 'admin'): ?>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Mentor</label>
+                                                <select name="mentor" class="form-select">
+                                                    <option value="">All Mentors</option>
+                                                    <?php 
+                                                    $mentors = $timesheet->getAllMentors();
+                                                    foreach ($mentors as $mentor): 
+                                                    ?>
+                                                        <option value="<?php echo $mentor['id']; ?>" <?php echo $selected_mentor == $mentor['id'] ? 'selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($mentor['full_name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <?php endif; ?>
+                                            <div class="col-md-3">
                                                 <label class="form-label">Project</label>
                                                 <select name="project" class="form-select">
                                                     <option value="">All Projects</option>
@@ -324,13 +360,13 @@ foreach ($calendar_data as $entry) {
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
-                                            <div class="col-md-3">
+                                            <div class="col-md-2">
                                                 <label class="form-label">&nbsp;</label>
                                                 <div>
                                                     <button type="submit" class="btn btn-primary">
                                                         <i class="bx bx-filter me-1"></i> Filter
                                                     </button>
-                                                    <a href="index.php" class="btn btn-outline-secondary">
+                                                    <a href="index.php<?php echo $_SESSION['user_type'] === 'admin' && $selected_mentor ? '?mentor=' . $selected_mentor : ''; ?>" class="btn btn-outline-secondary">
                                                         <i class="bx bx-refresh me-1"></i> Reset
                                                     </a>
                                                 </div>
@@ -351,15 +387,15 @@ foreach ($calendar_data as $entry) {
                                                 <?php echo date('F Y', mktime(0, 0, 0, $current_month, 1, $current_year)); ?>
                                             </h4>
                                             <div>
-                                                <a href="?year=<?php echo $current_year; ?>&month=<?php echo $current_month - 1; ?>&project=<?php echo $selected_project; ?>" 
+                                                <a href="?year=<?php echo $current_year; ?>&month=<?php echo $current_month - 1; ?>&project=<?php echo $selected_project; ?><?php echo $_SESSION['user_type'] === 'admin' && $selected_mentor ? '&mentor=' . $selected_mentor : ''; ?>" 
                                                    class="btn btn-outline-primary btn-sm">
                                                     <i class="bx bx-chevron-left"></i>
                                                 </a>
-                                                <a href="?year=<?php echo date('Y'); ?>&month=<?php echo date('n'); ?>&project=<?php echo $selected_project; ?>" 
+                                                <a href="?year=<?php echo date('Y'); ?>&month=<?php echo date('n'); ?>&project=<?php echo $selected_project; ?><?php echo $_SESSION['user_type'] === 'admin' && $selected_mentor ? '&mentor=' . $selected_mentor : ''; ?>" 
                                                    class="btn btn-outline-secondary btn-sm mx-2">
                                                     Today
                                                 </a>
-                                                <a href="?year=<?php echo $current_year; ?>&month=<?php echo $current_month + 1; ?>&project=<?php echo $selected_project; ?>" 
+                                                <a href="?year=<?php echo $current_year; ?>&month=<?php echo $current_month + 1; ?>&project=<?php echo $selected_project; ?><?php echo $_SESSION['user_type'] === 'admin' && $selected_mentor ? '&mentor=' . $selected_mentor : ''; ?>" 
                                                    class="btn btn-outline-primary btn-sm">
                                                     <i class="bx bx-chevron-right"></i>
                                                 </a>
@@ -404,7 +440,11 @@ foreach ($calendar_data as $entry) {
                                                 echo '<div class="day-entries">';
                                                 foreach (array_slice($calendar_entries[$current_date], 0, 3) as $entry) {
                                                     echo '<div class="entry-indicator" style="background-color: ' . $entry['color'] . '"></div>';
-                                                    echo '<span class="text-truncate d-block">' . htmlspecialchars($entry['activity_name']) . '</span>';
+                                                    echo '<span class="text-truncate d-block">' . htmlspecialchars($entry['activity_name']);
+                                                    if ($_SESSION['user_type'] === 'admin' && isset($entry['mentor_name'])) {
+                                                        echo ' (' . htmlspecialchars($entry['mentor_name']) . ')';
+                                                    }
+                                                    echo '</span>';
                                                 }
                                                 if (count($calendar_entries[$current_date]) > 3) {
                                                     echo '<small class="text-muted">+' . (count($calendar_entries[$current_date]) - 3) . ' more</small>';
@@ -464,6 +504,52 @@ foreach ($calendar_data as $entry) {
                         <input type="hidden" id="entry_id" name="entry_id">
                         <input type="hidden" id="entry_date" name="entry_date">
                         
+                        <?php if ($_SESSION['user_type'] === 'admin'): ?>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Mentor *</label>
+                                    <select class="form-select" id="mentor_id" name="mentor_id" required>
+                                        <option value="">Select Mentor</option>
+                                        <?php foreach ($mentors as $mentor): ?>
+                                            <option value="<?php echo $mentor['id']; ?>">
+                                                <?php echo htmlspecialchars($mentor['full_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Project *</label>
+                                    <select class="form-select" id="project_id" name="project_id" required>
+                                        <option value="">Select Project</option>
+                                        <?php foreach ($mentor_projects as $proj): ?>
+                                            <option value="<?php echo $proj['id']; ?>">
+                                                <?php echo htmlspecialchars($proj['project_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Activity *</label>
+                                    <select class="form-select" id="activity_id" name="activity_id" required>
+                                        <option value="">Select Activity</option>
+                                        <?php foreach ($activities as $activity): ?>
+                                            <option value="<?php echo $activity['id']; ?>" data-color="<?php echo $activity['color']; ?>">
+                                                <span class="activity-color" style="background-color: <?php echo $activity['color']; ?>"></span>
+                                                <?php echo htmlspecialchars($activity['activity_name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <?php else: ?>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -493,6 +579,7 @@ foreach ($calendar_data as $entry) {
                                 </div>
                             </div>
                         </div>
+                        <?php endif; ?>
                         
                         <div class="row">
                             <div class="col-md-6">
@@ -583,12 +670,67 @@ foreach ($calendar_data as $entry) {
                 $('#viewEntriesModal').modal('show');
             });
             
+            // Filter change handler for admin mentor dropdown
+            <?php if ($_SESSION['user_type'] === 'admin'): ?>
+            $('select[name="mentor"]').change(function() {
+                let currentUrl = new URL(window.location);
+                let mentorId = $(this).val();
+                
+                if (mentorId) {
+                    currentUrl.searchParams.set('mentor', mentorId);
+                } else {
+                    currentUrl.searchParams.delete('mentor');
+                }
+                
+                // Clear project selection when mentor changes
+                currentUrl.searchParams.delete('project');
+                
+                window.location.href = currentUrl.toString();
+            });
+            
+            // Mentor dropdown change in modal
+            $('#mentor_id').change(function() {
+                let mentorId = $(this).val();
+                let projectSelect = $('#project_id');
+                
+                if (mentorId) {
+                    // Load projects for selected mentor
+                    $.post('index.php', {
+                        action: 'get_projects_by_mentor',
+                        mentor_id: mentorId
+                    }, function(response) {
+                        if (response.success) {
+                            projectSelect.empty();
+                            projectSelect.append('<option value="">Select Project</option>');
+                            response.data.forEach(function(project) {
+                                projectSelect.append('<option value="' + project.id + '">' + project.project_name + '</option>');
+                            });
+                        }
+                    }, 'json');
+                } else {
+                    // Reset project dropdown
+                    projectSelect.empty();
+                    projectSelect.append('<option value="">Select Project</option>');
+                }
+            });
+            <?php endif; ?>
+            
             // Load entries for a date
             function loadEntries(date) {
-                $.post('index.php', {
+                let postData = {
                     action: 'get_entries',
                     date: date
-                }, function(response) {
+                };
+                
+                <?php if ($_SESSION['user_type'] === 'admin'): ?>
+                // Add mentor_id for admin if selected
+                let selectedMentor = $('select[name="mentor"]').val();
+                if (selectedMentor) {
+                    postData.mentor_id = selectedMentor;
+                }
+                <?php endif; ?>
+                
+                $.post('index.php', postData, function(response) {
                     if (response.success) {
                         displayEntries(response.data);
                     } else {
@@ -605,11 +747,18 @@ foreach ($calendar_data as $entry) {
                 }
                 
                 let html = '<div class="table-responsive"><table class="table table-hover">';
-                html += '<thead><tr><th>Time</th><th>Project</th><th>Activity</th><th>Description</th><th>Hours</th><th>Actions</th></tr></thead><tbody>';
+                html += '<thead><tr><th>Time</th>';
+                <?php if ($_SESSION['user_type'] === 'admin'): ?>
+                html += '<th>Mentor</th>';
+                <?php endif; ?>
+                html += '<th>Project</th><th>Activity</th><th>Description</th><th>Hours</th><th>Actions</th></tr></thead><tbody>';
                 
                 entries.forEach(function(entry) {
                     html += '<tr>';
                     html += '<td>' + entry.start_time + ' - ' + entry.end_time + '</td>';
+                    <?php if ($_SESSION['user_type'] === 'admin'): ?>
+                    html += '<td>' + (entry.mentor_name || 'N/A') + '</td>';
+                    <?php endif; ?>
                     html += '<td>' + entry.project_name + '</td>';
                     html += '<td><span class="activity-color" style="background-color: ' + entry.color + '"></span>' + entry.activity_name + '</td>';
                     html += '<td>' + entry.task_description + '</td>';

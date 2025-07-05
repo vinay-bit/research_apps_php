@@ -139,6 +139,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </ul>
         </li>
 
+        <!-- Time Sheet -->
+        <li class="menu-item <?php echo (strpos($current_page, 'timesheet') !== false || strpos($_SERVER['REQUEST_URI'], 'timesheet') !== false) ? 'active' : ''; ?>">
+            <a href="/timesheet/index.php" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-time"></i>
+                <div data-i18n="Time Sheet">Time Sheet</div>
+            </a>
+        </li>
+
         <!-- Research & Publications -->
         <li class="menu-header small text-uppercase">
             <span class="menu-header-text">Research & Publications</span>

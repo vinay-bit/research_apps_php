@@ -231,26 +231,32 @@ class TimeSheet {
         
         $query = "SELECT te.*, 
                          ta.activity_name, ta.color,
-                         p.project_name, p.project_id as project_code
+                         p.project_name, p.project_id as project_code,
+                         m.full_name as mentor_name
                   FROM " . $this->table_name . " te
                   LEFT JOIN timesheet_activities ta ON te.activity_id = ta.id
                   LEFT JOIN projects p ON te.project_id = p.id
-                  WHERE te.mentor_id = :mentor_id 
-                    AND te.entry_date BETWEEN :start_date AND :end_date";
+                  LEFT JOIN users m ON te.mentor_id = m.id
+                  WHERE te.entry_date BETWEEN :start_date AND :end_date";
+        
+        $params = [':start_date' => $start_date, ':end_date' => $end_date];
+        
+        if ($mentor_id) {
+            $query .= " AND te.mentor_id = :mentor_id";
+            $params[':mentor_id'] = $mentor_id;
+        }
         
         if ($project_id) {
             $query .= " AND te.project_id = :project_id";
+            $params[':project_id'] = $project_id;
         }
         
         $query .= " ORDER BY te.entry_date, te.start_time";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':mentor_id', $mentor_id);
-        $stmt->bindParam(':start_date', $start_date);
-        $stmt->bindParam(':end_date', $end_date);
         
-        if ($project_id) {
-            $stmt->bindParam(':project_id', $project_id);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
         }
         
         $stmt->execute();
@@ -261,25 +267,32 @@ class TimeSheet {
     public function getEntriesByDate($mentor_id, $date, $project_id = null) {
         $query = "SELECT te.*, 
                          ta.activity_name, ta.color,
-                         p.project_name, p.project_id as project_code
+                         p.project_name, p.project_id as project_code,
+                         m.full_name as mentor_name
                   FROM " . $this->table_name . " te
                   LEFT JOIN timesheet_activities ta ON te.activity_id = ta.id
                   LEFT JOIN projects p ON te.project_id = p.id
-                  WHERE te.mentor_id = :mentor_id 
-                    AND te.entry_date = :date";
+                  LEFT JOIN users m ON te.mentor_id = m.id
+                  WHERE te.entry_date = :date";
+        
+        $params = [':date' => $date];
+        
+        if ($mentor_id) {
+            $query .= " AND te.mentor_id = :mentor_id";
+            $params[':mentor_id'] = $mentor_id;
+        }
         
         if ($project_id) {
             $query .= " AND te.project_id = :project_id";
+            $params[':project_id'] = $project_id;
         }
         
         $query .= " ORDER BY te.start_time";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':mentor_id', $mentor_id);
-        $stmt->bindParam(':date', $date);
         
-        if ($project_id) {
-            $stmt->bindParam(':project_id', $project_id);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
         }
         
         $stmt->execute();
@@ -298,14 +311,36 @@ class TimeSheet {
     public function getMentorProjects($mentor_id) {
         $query = "SELECT DISTINCT p.* 
                   FROM projects p
-                  INNER JOIN project_mentors pm ON p.id = pm.project_id
-                  WHERE pm.mentor_id = :mentor_id AND pm.is_active = 1
+                  WHERE (p.lead_mentor_id = :mentor_id)
+                     OR (p.id IN (
+                         SELECT pm.project_id 
+                         FROM project_mentors pm 
+                         WHERE pm.mentor_id = :mentor_id2 AND pm.is_active = 1
+                     ))
                   ORDER BY p.project_name";
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':mentor_id', $mentor_id);
+        $stmt->bindParam(':mentor_id2', $mentor_id);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Get all mentors for admin dropdown
+    public function getAllMentors() {
+        $query = "SELECT DISTINCT u.id, u.full_name 
+                  FROM users u
+                  WHERE u.user_type = 'mentor' AND u.status = 'active'
+                  ORDER BY u.full_name";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Get projects by mentor for admin
+    public function getProjectsByMentor($mentor_id) {
+        return $this->getMentorProjects($mentor_id);
     }
     
     // Get total hours for a date
